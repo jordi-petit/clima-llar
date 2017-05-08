@@ -8,29 +8,32 @@ Runs the ClimaLlar server.
 import argparse
 import datetime
 import socket
-import sys
 
 
-def serve(host, port, database):
+def time():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def serve(ip, port, database):
 
     sock = socket.socket()
-    sock.bind((host, port))
+    sock.bind((ip, port))
     sock.listen()
-    print("ClimaLlar listening at %s:%s" % (host, port))
+    print("listening at %s:%s" % (ip, port))
 
     while True:
         conn, addr = sock.accept()
         data = conn.recv(1024).decode()
         if data is not None:
             info = str(data)
-            time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print ("%s %s %s" % (time, addr[0], str(data)))
+            print("%s %s %s" % (time(), addr[0], info))
         conn.close()
 
 
 def main():
 
-    host = socket.gethostbyname(socket.gethostname())
+    server = socket.gethostname()
+    ip = socket.gethostbyname(server)
 
     parser = argparse.ArgumentParser(description="Runs the ClimaLlar server.")
 
@@ -39,11 +42,8 @@ def main():
 
     args = parser.parse_args()
 
-    serve(host, args.port, args.database)
+    serve(ip, args.port, args.database)
 
 
 if __name__ == "__main__":
     main()
-
-
-
