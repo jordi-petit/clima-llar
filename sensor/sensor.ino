@@ -1,5 +1,5 @@
 
-// Macros with constants (defines SSID, PSWD, SERVER_IP, PORT)
+// Macros with constants (defines SSID, PSWD, SERVER_IP, PORT, KEY)
 // This file is not included in the GIT repo to hide sensitive data.
 #include "sensor.h"
 
@@ -15,19 +15,22 @@
 
 
 // Polling period
-int period = 10 * 1000;
+const int period = 10 * 1000;
 
 // Name of the wireless network
-char* ssid = SSID;
+const char* ssid = SSID;
 
 // Password of the wireless network
-char* pswd = PSWD;
+const char* pswd = PSWD;
 
 // IP of the server
-char* server_ip = SERVER_IP;
+const char* server_ip = SERVER_IP;
 
 // Port of the server
-int port = PORT;
+const int port = PORT;
+
+// Clima-Llar key
+const char* key = KEY;
 
 // Pin for RX
 const int Pin_RX = 3;
@@ -79,7 +82,7 @@ int read_light() {
 }
 
 
-void wifi_readline(char data[]) {
+void wifi_readline(char* data) {
     int p = 0;
     while (true) {
         while (wifi.available()) {
@@ -92,7 +95,7 @@ void wifi_readline(char data[]) {
 }
 
 
-bool wifi_command(char command[]) {
+bool wifi_command(const char* command) {
     wifi.print(command);
     char line[MaxLen];
     memset(line, 0, MaxLen);
@@ -107,7 +110,7 @@ bool wifi_command(char command[]) {
 
 // Send data over wifi
 
-void send_wifi(char data[]) {
+void send_wifi(const char* data) {
     char cmd[MaxLen];
     snprintf(cmd, MaxLen, "AT+CIPSTART=\"TCP\",\"%s\",%d\r\n", server_ip, port);
     wifi_command(cmd);
@@ -193,7 +196,7 @@ void loop() {
     read_DHT11(temperature, humidity);
     int light = read_light();
     char data[MaxLen];
-    snprintf(data, MaxLen, "%d:%d:%d", temperature, humidity, light);
+    snprintf(data, MaxLen, "%d:%d:%d:%d", key, temperature, humidity, light);
     send_wifi(data);
     digitalWrite(Pin_Led, LOW);
     delay(period);
