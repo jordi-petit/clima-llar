@@ -26,7 +26,7 @@ def serve(ip, port, database):
         data = conn.recv(1024).decode()
         if data is not None:
             info = str(data)
-            print("%s %s %s" % (time(), addr[0], info))
+            print("%s %s %s" % (time(), addr[0], info), flush=True)
         conn.close()
 
 
