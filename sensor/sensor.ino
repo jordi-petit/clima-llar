@@ -14,9 +14,14 @@
 #include <SoftwareSerial.h>
 
 
-// Polling period 
-const unsigned long period = 300000L;   // (5 minutes)
-//const unsigned long period = 10000L;  // (10 seconds)
+// Whether to use wifi or not (help for debugging)
+const bool use_wifi = true;
+
+// Polling period
+const unsigned long period = 60000L;   // (1 minute)
+
+// Min time between push button request
+const unsigned long min_push = 1000L;   // (1 second)
 
 // Name of the wireless network
 const char* ssid = SSID;
@@ -48,9 +53,15 @@ const int Pin_PhRes = A0;
 // Pin for the onboard LED
 const int Pin_Led = 13;
 
+// Pin for the push button
+const int Pin_Btn = 5;
+
 // Lengths of the string buffers
 const int MaxLen = 128;
 
+
+//
+unsigned long last;
 
 // The DHT11 sensor device
 SimpleDHT11 dht11;
@@ -64,7 +75,7 @@ SoftwareSerial wifi(Pin_RX, Pin_TX);
 
 void read_DHT11(byte& temperature, byte &humidity) {
     if (dht11.read(Pin_DHT11, &temperature, &humidity, NULL)) {
-        Serial.print("Read DHT11 failed");
+        Serial.println("Read DHT11 failed");
     }
 }
 
@@ -106,6 +117,7 @@ bool wifi_command(const char* command) {
     while (true) {
         wifi_readline(line);
         Serial.println(line);
+        if (strcmp(line, "ready") == 0) return true;
         if (strcmp(line, "OK") == 0) return true;
         if (strcmp(line, "ERROR") == 0) return false;
     }
@@ -115,14 +127,22 @@ bool wifi_command(const char* command) {
 // Send data over wifi
 
 void send_wifi(const char* data) {
-    char cmd[MaxLen];
-    snprintf(cmd, MaxLen, "AT+CIPSTART=\"TCP\",\"%s\",%d", server_ip, port);
-    wifi_command(cmd);
-    int length = strlen(data);
-    char str[MaxLen];
-    sprintf(str, "AT+CIPSEND=%d", length);
-    wifi_command(str);
-    wifi.println(data);
+    if (use_wifi) {
+        wifi_command("AT+CIPSTA?");
+        char cmd[MaxLen];
+        snprintf(cmd, MaxLen, "AT+CIPSTART=\"TCP\",\"%s\",%d", server_ip, port);
+        wifi_command(cmd);
+        int length = strlen(data);
+        char str[MaxLen];
+        sprintf(str, "AT+CIPSEND=%d", length);
+        wifi_command(str);
+        wifi.println(data);
+        delay(100);
+        wifi_command("AT+CIPCLOSE");
+    }
+    Serial.print("time: ");
+    Serial.print(millis() / 1000);
+    Serial.print("data: ");
     Serial.println(data);
 }
 
@@ -131,12 +151,31 @@ void send_wifi(const char* data) {
 
 void led_flash() {
     Serial.println("# leds flashing");
-    for (int i = 0; i < 20; ++i) {
+    for (int i = 0; i < 3; ++i) {
         digitalWrite(Pin_Led, HIGH);
-        delay(250);
+        delay(125);
         digitalWrite(Pin_Led, LOW);
-        delay(250);
+        delay(125);
+        digitalWrite(Pin_Led, HIGH);
+        delay(125);
+        digitalWrite(Pin_Led, LOW);
+        delay(500);
     }
+}
+
+
+// The function that does the work
+
+void sense_and_send() {
+    digitalWrite(Pin_Led, HIGH);
+    byte temperature = 255;
+    byte humidity = 255;
+    read_DHT11(temperature, humidity);
+    int light = read_light();
+    char data[MaxLen];
+    snprintf(data, MaxLen, "%s:%d:%d:%d", key, temperature, humidity, light);
+    send_wifi(data);
+    digitalWrite(Pin_Led, LOW);
 }
 
 
@@ -157,45 +196,60 @@ void setup() {
     // Setup Photoresistor
     pinMode(Pin_PhRes, INPUT);
 
+    // Setup push button
+    pinMode(Pin_Btn, INPUT_PULLUP);
+
     // Setup Wifi
-    Serial.println("# Wifi init\n");
-    wifi.begin(9600);
+    if (use_wifi) {
 
-    Serial.println("# Wifi test");
-    wifi_command("AT");
+        Serial.println("# Wifi init\n");
+        wifi.begin(9600);
 
-/*  The following command gives me trouble.
-    Serial.println("# Wifi info:");
-    wifi_command("AT+GMR");
-*/
+        Serial.println("# Wifi test");
+        wifi_command("AT");
 
-    Serial.println("# Wifi mode:");
-    wifi_command("AT+CWMODE?");
+        Serial.println("# Wifi reset");
+        wifi_command("AT+RST");
+        delay(5000);
 
-    Serial.println("# Wifi list of access points:");
-    wifi_command("AT+CWLAP");
+    /*  The following command gives me trouble.
+        Serial.println("# Wifi info:");
+        wifi_command("AT+GMR");
+    */
 
-    Serial.println("# Wifi join access point:");
-    char str[MaxLen];
-    sprintf(str, "AT+CWJAP=\"%s\",\"%s\"", ssid, pswd);
-    wifi_command(str);
+        Serial.println("# Wifi mode:");
+        wifi_command("AT+CWMODE?");
 
-    Serial.println("# Wifi info:");
-    wifi_command("AT+CWJAP?");
+        Serial.println("# Wifi list of access points:");
+        wifi_command("AT+CWLAP");
 
-    Serial.println("# Wifi info:");
-    wifi_command("AT+CIPSTATUS");
+        Serial.println("# Wifi join access point:");
+        char str[MaxLen];
+        sprintf(str, "AT+CWJAP=\"%s\",\"%s\"", ssid, pswd);
+        wifi_command(str);
 
-    Serial.println("# Wifi info:");
-    wifi_command("AT+CIFSR");
+        Serial.println("# Wifi info:");
+        wifi_command("AT+CWJAP?");
 
-    Serial.println("# Wifi info:");
-    wifi_command("AT+CIPSTA?");
+        Serial.println("# Wifi info:");
+        wifi_command("AT+CIPSTATUS");
 
-    Serial.println("# Wifi done");
+        Serial.println("# Wifi info:");
+        wifi_command("AT+CIFSR");
+
+        Serial.println("# Wifi info:");
+        wifi_command("AT+CIPSTA?");
+
+        Serial.println("# Wifi done");
+    }
 
     // This LED dance signals end of setup.
     led_flash();
+
+    // Start
+    send_wifi("hello");
+    sense_and_send();
+    last = millis();
 }
 
 
@@ -203,14 +257,12 @@ void setup() {
 // Arduino loop code
 
 void loop() {
-    digitalWrite(Pin_Led, HIGH);
-    byte temperature = 255;
-    byte humidity = 255;
-    read_DHT11(temperature, humidity);
-    int light = read_light();
-    char data[MaxLen];
-    snprintf(data, MaxLen, "%s:%d:%d:%d", key, temperature, humidity, light);
-    send_wifi(data);
-    digitalWrite(Pin_Led, LOW);
-    delay(period);
+    unsigned long time_since_last = millis() - last;
+        // see michael_x at https://forum.arduino.cc/index.php?topic=122413.0
+    if (time_since_last > period
+        or (digitalRead(Pin_Btn) == LOW and time_since_last > min_push))
+    {
+        sense_and_send();
+        last = millis();
+    }
 }
