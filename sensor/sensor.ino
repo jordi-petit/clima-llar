@@ -190,14 +190,14 @@ void setup() {
     pinMode(Pin_Led, OUTPUT);
     digitalWrite(Pin_Led, LOW);
 
-    // This LED dance signals start of setup.
-    led_flash();
-
     // Setup Photoresistor
     pinMode(Pin_PhRes, INPUT);
 
     // Setup push button
     pinMode(Pin_Btn, INPUT_PULLUP);
+
+    // This LED dance signals start of setup and offers some delay to initialize ESP-01.
+    led_flash();
 
     // Setup Wifi
     if (use_wifi) {
@@ -207,10 +207,6 @@ void setup() {
 
         Serial.println("# Wifi test");
         wifi_command("AT");
-
-        Serial.println("# Wifi reset");
-        wifi_command("AT+RST");
-        delay(5000);
 
     /*  The following command gives me trouble.
         Serial.println("# Wifi info:");
