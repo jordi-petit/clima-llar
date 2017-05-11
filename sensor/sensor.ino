@@ -1,5 +1,5 @@
 
-// Macros with constants (defines SSID, PSWD, SERVER_IP, PORT, KEY)
+// Macros with constants (defines MY_SSID, MY_PSWD, MY_SERVER, MY_PORT, MY_KEY)
 // This file is not included in the GIT repo to hide sensitive data.
 #include "sensor.h"
 
@@ -11,6 +11,7 @@
 
 // Libraries for devices
 #include <SimpleDHT.h>
+#include <WiFiEsp.h>
 #include <SoftwareSerial.h>
 
 
@@ -24,19 +25,19 @@ const unsigned long period = 60000L;   // (1 minute)
 const unsigned long min_push = 1000L;   // (1 second)
 
 // Name of the wireless network
-const char* ssid = SSID;
+const char* ssid = MY_SSID;
 
 // Password of the wireless network
-const char* pswd = PSWD;
+const char* pswd = MY_PSWD;
 
 // IP of the server
-const char* server_ip = SERVER_IP;
+const char* server = MY_SERVER;
 
 // Port of the server
-const int port = PORT;
+const int port = MY_PORT;
 
 // Clima-Llar key
-const char* key = KEY;
+const char* key = MY_KEY;
 
 // Pin for RX
 const int Pin_RX = 3;
@@ -59,16 +60,40 @@ const int Pin_Btn = 5;
 // Lengths of the string buffers
 const int MaxLen = 128;
 
-
-//
+// Time when last reading was sent
 unsigned long last;
+
+
+// The ESP01 wifi device
+SoftwareSerial esp01(Pin_RX, Pin_TX);
+
+// The Ethernet client object
+WiFiEspClient client;
 
 // The DHT11 sensor device
 SimpleDHT11 dht11;
 
 
-// The ESP01 wifi device
-SoftwareSerial wifi(Pin_RX, Pin_TX);
+
+// Print Wifi satus
+
+void printWifiStatus()
+{
+    // print the SSID of the network you're attached to
+    Serial.print("SSID: ");
+    Serial.println(WiFi.SSID());
+
+    // print your WiFi shield's IP address
+    IPAddress ip = WiFi.localIP();
+    Serial.print("IP Address: ");
+    Serial.println(ip);
+
+    // print the received signal strength
+    long rssi = WiFi.RSSI();
+    Serial.print("Signal strength (RSSI):");
+    Serial.print(rssi);
+    Serial.println(" dBm");
+}
 
 
 // Read temperature and humidity from DHT11
@@ -95,54 +120,21 @@ int read_light() {
 }
 
 
-void wifi_readline(char* data) {
-    int p = 0;
-    bool c13 = false;
-    bool c10 = false;
-    while (not c13) {
-        if (wifi.available()) {
-            char c = wifi.read();
-            if (c == 10) c10 = true;
-            else if (c == 13) c13 = true;
-            else data[p++] = c;
-        }
-    }
-    data[p] = 0;
-}
-
-
-bool wifi_command(const char* command) {
-    wifi.println(command);
-    char line[MaxLen];
-    while (true) {
-        wifi_readline(line);
-        Serial.println(line);
-        if (strcmp(line, "ready") == 0) return true;
-        if (strcmp(line, "OK") == 0) return true;
-        if (strcmp(line, "ERROR") == 0) return false;
-    }
-}
-
-
 // Send data over wifi
 
 void send_wifi(const char* data) {
     if (use_wifi) {
-        wifi_command("AT+CIPSTA?");
-        char cmd[MaxLen];
-        snprintf(cmd, MaxLen, "AT+CIPSTART=\"TCP\",\"%s\",%d", server_ip, port);
-        wifi_command(cmd);
-        int length = strlen(data);
-        char str[MaxLen];
-        sprintf(str, "AT+CIPSEND=%d", length);
-        wifi_command(str);
-        wifi.println(data);
-        delay(100);
-        wifi_command("AT+CIPCLOSE");
+        if (not client.connected()) client.stop();
+        if (client.connect(MY_SERVER, MY_PORT)) {
+            Serial.println("Connected to server");
+            client.print(data);
+        } else {
+            Serial.println("CATXIS NOT Connected to server");
+        }
     }
     Serial.print("time: ");
     Serial.print(millis() / 1000);
-    Serial.print("data: ");
+    Serial.print(" data: ");
     Serial.println(data);
 }
 
@@ -152,14 +144,10 @@ void send_wifi(const char* data) {
 void led_flash() {
     Serial.println("# leds flashing");
     for (int i = 0; i < 3; ++i) {
-        digitalWrite(Pin_Led, HIGH);
-        delay(125);
-        digitalWrite(Pin_Led, LOW);
-        delay(125);
-        digitalWrite(Pin_Led, HIGH);
-        delay(125);
-        digitalWrite(Pin_Led, LOW);
-        delay(500);
+        digitalWrite(Pin_Led, HIGH); delay(125);
+        digitalWrite(Pin_Led, LOW ); delay(125);
+        digitalWrite(Pin_Led, HIGH); delay(125);
+        digitalWrite(Pin_Led, LOW ); delay(500);
     }
 }
 
@@ -168,6 +156,7 @@ void led_flash() {
 
 void sense_and_send() {
     digitalWrite(Pin_Led, HIGH);
+    printWifiStatus();
     byte temperature = 255;
     byte humidity = 255;
     read_DHT11(temperature, humidity);
@@ -182,9 +171,12 @@ void sense_and_send() {
 // Arduino setup code
 
 void setup() {
-    // Setup Serial (console)
+    // Setup serial of the console
     Serial.begin(9600);
     Serial.println("# clima-llar sensor starting");
+
+    // Setup serial of the esp01
+    esp01.begin(9600);
 
     // Setup LED
     pinMode(Pin_Led, OUTPUT);
@@ -196,51 +188,33 @@ void setup() {
     // Setup push button
     pinMode(Pin_Btn, INPUT_PULLUP);
 
-    // This LED dance signals start of setup and offers some delay to initialize ESP-01.
-    led_flash();
-
     // Setup Wifi
     if (use_wifi) {
 
-        Serial.println("# Wifi init\n");
-        wifi.begin(9600);
+        // initialize ESP module
+        WiFi.init(&esp01);
 
-        Serial.println("# Wifi test");
-        wifi_command("AT");
+        // check for the presence of the shield
+        if (WiFi.status() == WL_NO_SHIELD) {
+            Serial.println("ESP-01 not present");
+            while (true);
+        }
 
-    /*  The following command gives me trouble.
-        Serial.println("# Wifi info:");
-        wifi_command("AT+GMR");
-    */
+        // attempt to connect to WiFi network
+        int status = WL_IDLE_STATUS;
+        while (status != WL_CONNECTED) {
+            Serial.print("Attempting to connect to WPA SSID: ");
+            Serial.println(ssid);
+            status = WiFi.begin(ssid, pswd);
+        }
 
-        Serial.println("# Wifi mode:");
-        wifi_command("AT+CWMODE?");
+        // you're connected now, so print out the data
+        Serial.println("Connected to the network");
+        printWifiStatus();
 
-        Serial.println("# Wifi list of access points:");
-        wifi_command("AT+CWLAP");
-
-        Serial.println("# Wifi join access point:");
-        char str[MaxLen];
-        sprintf(str, "AT+CWJAP=\"%s\",\"%s\"", ssid, pswd);
-        wifi_command(str);
-
-        Serial.println("# Wifi info:");
-        wifi_command("AT+CWJAP?");
-
-        Serial.println("# Wifi info:");
-        wifi_command("AT+CIPSTATUS");
-
-        Serial.println("# Wifi info:");
-        wifi_command("AT+CIFSR");
-
-        Serial.println("# Wifi info:");
-        wifi_command("AT+CIPSTA?");
-
-        Serial.println("# Wifi done");
+        // This LED dance signals end of wifi setup.
+        led_flash();
     }
-
-    // This LED dance signals end of setup.
-    led_flash();
 
     // Start
     send_wifi("hello");
@@ -253,6 +227,10 @@ void setup() {
 // Arduino loop code
 
 void loop() {
+    // Read the answer from the server if needed and copy it to console
+    while (client.available()) Serial.print(char(client.read()));
+
+    // Check time
     unsigned long time_since_last = millis() - last;
         // see michael_x at https://forum.arduino.cc/index.php?topic=122413.0
     if (time_since_last > period
