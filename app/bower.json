@@ -1,0 +1,23 @@
+{
+  "name": "clima-llar-app",
+  "description": "clima-llar-app",
+  "main": "",
+  "authors": [
+    "Jordi Petit <jordi.petit@gmail.com>"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/jordi-petit/clima-llar",
+  "moduleType": [],
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components"
+  ],
+  "dependencies": {
+    "jquery": "",
+    "bootstrap": "",
+    "flot": "",
+    "font-awesome": ""
+  }
+}
