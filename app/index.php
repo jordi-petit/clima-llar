@@ -1,252 +1,204 @@
+
+<?
+
+
+function get_readings($date) {
+    $out = `grep $date /home/jpetit/llob158.txt`;
+    return explode("\n", $out);
+}
+
+
+function parse_reading($line) {
+    $elems = explode(" ", $line);
+    $reads = explode(":", $elems[3]);
+    return array(
+        line        => $line,
+        date        => $elems[0],
+        time        => $elems[1],
+        local_date  => substr($elems[0], 8, 2) . "/" . substr($elems[0], 5, 2) . "/" . substr($elems[0], 0, 4),
+        short_time  => substr($elems[1], 0, 5),
+        place       => $reads[0],
+        temperature => $reads[1],
+        humidity    => $reads[2],
+        light       => round($reads[3] / 1024 * 100),
+    );
+}
+
+
+
+function show_page() {
+    $date = date("Y-m-d");
+    $readings = get_readings($date);
+    $last = $readings[sizeof($readings) - 2];
+
+    $data = parse_reading($last);
+    $gauge_size = 110;
+
+    print "
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
     <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <meta charset='utf-8'/>
+        <meta http-equiv='X-UA-Compatible' content='IE=edge'/>
+        <meta name='viewport' content='width=device-width, initial-scale=1'/>
+        <meta http-equiv='Refresh' content='60'>
+
         <title>clima-llar-app</title>
-        <!-- Bootstrap -->
-        <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
-        <!-- Favicon -->
-        <link rel="shortcut icon"  href="favicon.ico" />
+
+        <link href='bower_components/bootstrap/dist/css/bootstrap.min.css' rel='stylesheet'/>
+        <link rel='shortcut icon' href='favicon.ico'/>
+
     </head>
     <body>
-        <div class="container">
+        <div class='container'>
             <br/>
 
-            <div class="jumbotron" style='padding-top: 6px; padding-bottom: 6px;'>
+            <div class='jumbotron' style='padding-top: 6px; padding-bottom: 6px;'>
                 <h1>Llobregat 158</h1>
                 <p>Clima Llar App</p1>
             </div>
 
             <div class='panel panel-default'>
                 <div class='panel-heading'>
-                    Readings
+                    <b>$data[local_date]
+                    <span class='pull-right'>$data[short_time]</b></span>
                 </div>
                 <div class='panel-body'>
-                    <table>
+                    <table width='100%' style='margin-left: -16px;'>
                         <tr>
-                            <td>
+                            <td align='center'>
+                                <small>Temperatura</small>
+                            </td>
+                            <td align='center'>
+                                <small>Humitat</small>
+                            </td>
+                            <td align='center'>
+                                <small>Llum</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align='center'>
                                 <div id='temperature-gauge' style='width: 120; height: 120px;'></div>
                             </td>
-                            <td>
+                            <td align='center'>
                                 <div id='humidity-gauge' style='width: 120; height: 120px;'></div>
                             </td>
-                            <td>
+                            <td align='center'>
                                 <div id='light-gauge' style='width: 120; height: 120px;'></div>
                             </td>
                         </tr>
                     </table>
+                    <center>
+                    </center>
                 </div>
             </div>
-
-            <div class='panel panel-default'>
-                <div class='panel-heading'>
-                    Temperature
-                </div>
-                <div class='panel-body'>
-
-                    <div class='flot-chart'>
-                        <div class='flot-chart-content' id='temperature-chart' style='height: 175px;'></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class='panel panel-default'>
-                <div class='panel-heading'>
-                    Humidity
-                </div>
-                <div class='panel-body'>
-
-                    <div class='flot-chart'>
-                        <div class='flot-chart-content' id='humidity-chart' style='height: 175px;'></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class='panel panel-default'>
-                <div class='panel-heading'>
-                    Light
-                </div>
-                <div class='panel-body'>
-
-                    <div class='flot-chart'>
-                        <div class='flot-chart-content' id='light-chart' style='height: 175px;'></div>
-                    </div>
-                </div>
-            </div>
-
         </div>
-        <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-        <script src="bower_components/jquery/dist/jquery.min.js"></script>
-        <!-- Include all compiled plugins (below), or include individual files as needed -->
-        <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+
+        <script src='bower_components/jquery/dist/jquery.min.js'></script>
+        <script src='bower_components/bootstrap/dist/js/bootstrap.min.js'></script>
+
+        <script src='bower_components/flot/excanvas.min.js'></script>
+        <script src='bower_components/flot/jquery.flot.js'></script>
+        <script src='bower_components/flot/jquery.flot.pie.js'></script>
+        <script src='bower_components/flot/jquery.flot.resize.js'></script>
+        <script src='bower_components/flot/jquery.flot.time.js'></script>
+
+        <script src='https://www.gstatic.com/charts/loader.js'></script>
+
+        <script>
+            $(document).ready(function() {
+               google.charts.load('current', {
+                   'packages': ['gauge']
+               });
+
+               google.charts.setOnLoadCallback(drawChart1);
+               google.charts.setOnLoadCallback(drawChart2);
+               google.charts.setOnLoadCallback(drawChart3);
+
+               function drawChart1() {
+
+                   var data = google.visualization.arrayToDataTable([
+                       ['Label', 'Value'],
+                       ['℃', $data[temperature]]
+                   ]);
+
+                   var options = {
+                       width: $gauge_size,
+                       height: $gauge_size,
+                       greenFrom: 0,
+                       greenTo: 15,
+                       yellowFrom: 15,
+                       yellowTo: 25,
+                       redFrom: 25,
+                       redTo: 40,
+                       greenColor: 'LightSkyBlue',
+                       yellowColor: 'Bisque',
+                       redColor: 'LightCoral',
+                       min: 0,
+                       max: 40,
+                       minorTicks: 5
+                   };
+
+                   var chart = new google.visualization.Gauge(document.getElementById('temperature-gauge'));
+                   chart.draw(data, options);
+               }
 
 
-                <!-- Flot Charts JavaScript -->
-                <script src='bower_components/flot/excanvas.min.js'></script>
-                <script src='bower_components/flot/jquery.flot.js'></script>
-                <script src='bower_components/flot/jquery.flot.pie.js'></script>
-                <script src='bower_components/flot/jquery.flot.resize.js'></script>
-                <script src='bower_components/flot/jquery.flot.time.js'></script>
+               function drawChart2() {
 
+                   var data = google.visualization.arrayToDataTable([
+                       ['Label', 'Value'],
+                       ['%', $data[humidity]]
+                   ]);
 
+                   var options = {
+                       width: $gauge_size,
+                       height: $gauge_size,
+                       greenFrom: 0,
+                       greenTo: 100,
+                       greenColor: 'LightGray',
+                       min: 0,
+                       max: 100,
+                       minorTicks: 10
+                   };
 
-                <!-- Google Charts JavaScript -->
-                <script src='https://www.gstatic.com/charts/loader.js'></script>
+                   var chart = new google.visualization.Gauge(document.getElementById('humidity-gauge'));
+                   chart.draw(data, options);
 
+               }
 
-                <script>
+               function drawChart3() {
 
+                   var data = google.visualization.arrayToDataTable([
+                       ['Label', 'Value'],
+                       ['Light', $data[light]]
+                   ]);
 
-       $(document).ready(function(){
-            var data = [
-                {
-                    data: [
-                        [1, 20],
-                        [2, 20],
-                        [3, 22],
-                        [4, 20],
-                        [5, 19],
-                        [6, 20],
-                        [7, 22],
-                        [8, 20],
-                    ],
-                    //label: 'Temperature',
-                    color: 'green'
-                }
-            ];
-            var options = {
-                legend: {
-                    position: 'se',
-                }
-            };
+                   var options = {
+                       width: $gauge_size,
+                       height: $gauge_size,
+                       greenFrom: 0,
+                       greenTo: 100,
+                       greenColor: 'LightGray',
+                       min: 0,
+                       max: 100,
+                       minorTicks: 10
+                   };
 
-            $.plot($('#temperature-chart'), data, options);
-        });
+                   var chart = new google.visualization.Gauge(document.getElementById('light-gauge'));
+                   chart.draw(data, options);
 
-       $(document).ready(function(){
-            var data = [
-                {
-                    data: [
-                        [1, 20],
-                        [2, 20],
-                        [3, 22],
-                        [4, 20],
-                        [5, 19],
-                        [6, 20],
-                        [7, 22],
-                        [8, 20],
-                    ],
-                    //label: 'Humidity',
-                    color: 'red'
-                }
-            ];
-            var options = {
-                legend: {
-                    position: 'se',
-                }
-            };
-
-            $.plot($('#humidity-chart'), data, options);
-        });
-
-       $(document).ready(function(){
-            var data = [
-                {
-                    data: [
-                        [1, 20],
-                        [2, 20],
-                        [3, 22],
-                        [4, 20],
-                        [5, 19],
-                        [6, 20],
-                        [7, 22],
-                        [8, 20],
-                    ],
-                    //label: 'Light',
-                    color: 'blue'
-                }
-            ];
-            var options = {
-                legend: {
-                    position: 'se',
-                }
-            };
-
-            $.plot($('#light-chart'), data, options);
-        });
-
-
-
-
-               $(document).ready(function(){
-                  google.charts.load('current', {'packages':['gauge']});
-
-                  google.charts.setOnLoadCallback(drawChart1);
-                  google.charts.setOnLoadCallback(drawChart2);
-                  google.charts.setOnLoadCallback(drawChart3);
-
-                  function drawChart1() {
-
-                    var data = google.visualization.arrayToDataTable([
-                      ['Label', 'Value'],
-                      ['ccn', 3]
-                    ]);
-
-                    var options = {
-                      width: 115, height: 115,
-                      greenFrom: 0, greenTo: 9, yellowFrom: 9, yellowTo: 14, redFrom: 14, redTo: 20,
-                      min: 0, max: 18,
-                      minorTicks: 5
-                    };
-
-                    var chart = new google.visualization.Gauge(document.getElementById('temperature-gauge'));
-                    chart.draw(data, options);
-                  }
-
-
-                  function drawChart2() {
-
-                    var data = google.visualization.arrayToDataTable([
-                      ['Label', 'Value'],
-                      ['ccn ratio', 1.0]
-                    ]);
-
-                    var options = {
-                      width: 115, height: 115,
-                      greenFrom: 0, greenTo: 1.5, yellowFrom: 1.5, yellowTo: 2.25, redFrom: 2.25, redTo: 3,
-                      min: 0, max: 3,
-                      minorTicks: 5
-                    };
-
-                    var chart = new google.visualization.Gauge(document.getElementById('humidity-gauge'));
-                    chart.draw(data, options);
-
-                  }
-
-                  function drawChart3() {
-
-                    var data = google.visualization.arrayToDataTable([
-                      ['Label', 'Value'],
-                      ['dif ratio', 1.1]
-                    ]);
-
-                    var options = {
-                      width: 115, height: 115,
-                      greenFrom: 0, greenTo: 1.5, yellowFrom: 1.5, yellowTo: 2.25, redFrom: 2.25, redTo: 3,
-                      min: 0, max: 3,
-                      minorTicks: 5
-                    };
-
-                    var chart = new google.visualization.Gauge(document.getElementById('light-gauge'));
-                    chart.draw(data, options);
-
-                  }
+               }
             });
-
-                </script>
-
-
+        </script>
     </body>
 </html>
+
+    ";
+}
+
+
+
+show_page();
