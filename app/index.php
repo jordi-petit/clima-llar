@@ -32,7 +32,43 @@ function show_page() {
     $last = $readings[sizeof($readings) - 2];
 
     $data = parse_reading($last);
-    $gauge_size = 110;
+
+    $c = 0;
+    $temperature_list = "";
+    $humidity_list = "";
+    $light_list = "";
+    $temperature_first = true;
+    $humidity_first = true;
+    $light_list_first = true;
+    foreach ($readings as $reading) {
+        $info = parse_reading($reading);
+
+        $y = substr($info[date], 0, 4);
+        $m = substr($info[date], 5, 2);
+        $d = substr($info[date], 8, 2);
+        $h = substr($info[time], 0, 2);
+        $min = substr($info[time], 3, 2);
+        $s = substr($info[time], 6, 2);
+        $javadate = "Date.UTC($y, $m, $d, $h, $min, $s)";
+
+        if ($info[temperature]) {
+            $info[temperature] += rand(0,100)/100;
+            if (!$temperature_first) $temperature_list .= ", ";
+            else $temperature_first = false;
+            $temperature_list .= "[$javadate, $info[temperature]]";
+        }
+        if ($info[humidity]) {
+            if (!$humidity_first) $humidity_list .= ", ";
+            else $humidity_first = false;
+            $humidity_list .= "[$javadate, $info[humidity]]";
+        }
+        if ($info[light]) {
+            if (!$light_first) $light_list .= ", ";
+            else $light_first = false;
+            $light_list .= "[$javadate, $info[light]]\n";
+        }
+        $c++;
+    }
 
     print "
 
@@ -62,38 +98,87 @@ function show_page() {
 
             <div class='panel panel-default'>
                 <div class='panel-heading'>
-                    <b>$data[local_date]
-                    <span class='pull-right'>$data[short_time]</b></span>
+                    <b>
+                        $data[short_time]
+                        <span class='pull-right'>$data[local_date]</span>
+                    </b>
                 </div>
-                <div class='panel-body'>
-                    <table width='100%' style='margin-left: -16px;'>
-                        <tr>
-                            <td align='center'>
-                                <small>Temperatura</small>
-                            </td>
-                            <td align='center'>
-                                <small>Humitat</small>
-                            </td>
-                            <td align='center'>
-                                <small>Llum</small>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td align='center'>
-                                <div id='temperature-gauge' style='width: 120; height: 120px;'></div>
-                            </td>
-                            <td align='center'>
-                                <div id='humidity-gauge' style='width: 120; height: 120px;'></div>
-                            </td>
-                            <td align='center'>
-                                <div id='light-gauge' style='width: 120; height: 120px;'></div>
-                            </td>
-                        </tr>
-                    </table>
-                    <center>
-                    </center>
+                <div class='panel-body' style=''>
+                    <div>
+                        <table id='readings' width='100%' border='0' cellpadding='0' cellspacing='0'>
+                            <tr>
+                                <td align='center'>
+                                    <small>Temperatura</small>
+                                </td>
+                                <td align='center'>
+                                    <small>Humitat</small>
+                                </td>
+                                <td align='center'>
+                                    <small>Llum</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td align='center'>
+                                    <div id='temperature-gauge' ></div>
+                                </td>
+                                <td align='center'>
+                                    <div id='humidity-gauge' ></div>
+                                </td>
+                                <td align='center'>
+                                    <div id='light-gauge' ></div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
                 </div>
             </div>
+
+            <div class='panel panel-default'>
+                <div class='panel-heading'>
+                    <b>
+                        Temperatura
+                        <span class='pull-right'>$data[local_date]</span>
+                    </b>
+                </div>
+                <div class='panel-body'>
+
+                    <div class='flot-chart'>
+                        <div class='flot-chart-content' id='temperature-chart' style='height: 175px;'></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class='panel panel-default'>
+                <div class='panel-heading'>
+                    <b>
+                        Humitat
+                        <span class='pull-right'>$data[local_date]</span>
+                    </b>
+                </div>
+                <div class='panel-body'>
+
+                    <div class='flot-chart'>
+                        <div class='flot-chart-content' id='humidity-chart' style='height: 175px;'></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class='panel panel-default'>
+                <div class='panel-heading'>
+                    <b>
+                        Llum
+                        <span class='pull-right'>$data[local_date]</span>
+                    </b>
+                </div>
+                <div class='panel-body'>
+
+                    <div class='flot-chart'>
+                        <div class='flot-chart-content' id='light-chart' style='height: 175px;'></div>
+                    </div>
+                </div>
+            </div>
+
+
         </div>
 
         <script src='bower_components/jquery/dist/jquery.min.js'></script>
@@ -109,89 +194,167 @@ function show_page() {
 
         <script>
             $(document).ready(function() {
-               google.charts.load('current', {
-                   'packages': ['gauge']
-               });
 
-               google.charts.setOnLoadCallback(drawChart1);
-               google.charts.setOnLoadCallback(drawChart2);
-               google.charts.setOnLoadCallback(drawChart3);
+                gauge_size = $('#readings').width() / 3;
+                if (gauge_size > 200) gauge_size = 200;
+                console.log(gauge_size);
 
-               function drawChart1() {
+                google.charts.load('current', {
+                    'packages': ['gauge']
+                });
 
-                   var data = google.visualization.arrayToDataTable([
-                       ['Label', 'Value'],
-                       ['℃', $data[temperature]]
-                   ]);
+                google.charts.setOnLoadCallback(drawChart1);
+                google.charts.setOnLoadCallback(drawChart2);
+                google.charts.setOnLoadCallback(drawChart3);
 
-                   var options = {
-                       width: $gauge_size,
-                       height: $gauge_size,
-                       greenFrom: 0,
-                       greenTo: 15,
-                       yellowFrom: 15,
-                       yellowTo: 25,
-                       redFrom: 25,
-                       redTo: 40,
-                       greenColor: 'LightSkyBlue',
-                       yellowColor: 'Bisque',
-                       redColor: 'LightCoral',
-                       min: 0,
-                       max: 40,
-                       minorTicks: 5
-                   };
+                function drawChart1() {
 
-                   var chart = new google.visualization.Gauge(document.getElementById('temperature-gauge'));
-                   chart.draw(data, options);
-               }
+                    var data = google.visualization.arrayToDataTable([
+                        ['Label', 'Value'],
+                        ['°C', $data[temperature]]
+                    ]);
+
+                    var options = {
+                        width: gauge_size,
+                        height: gauge_size,
+                        greenFrom: 0,
+                        greenTo: 15,
+                        yellowFrom: 15,
+                        yellowTo: 25,
+                        redFrom: 25,
+                        redTo: 40,
+                        greenColor: 'LightSkyBlue',
+                        yellowColor: 'Bisque',
+                        redColor: 'LightCoral',
+                        min: 0,
+                        max: 40,
+                        minorTicks: 5
+                    };
+
+                    var chart = new google.visualization.Gauge(document.getElementById('temperature-gauge'));
+                    chart.draw(data, options);
+                }
 
 
-               function drawChart2() {
+                function drawChart2() {
 
-                   var data = google.visualization.arrayToDataTable([
-                       ['Label', 'Value'],
-                       ['%', $data[humidity]]
-                   ]);
+                    var data = google.visualization.arrayToDataTable([
+                        ['Label', 'Value'],
+                        ['%', $data[humidity]]
+                    ]);
 
-                   var options = {
-                       width: $gauge_size,
-                       height: $gauge_size,
-                       greenFrom: 0,
-                       greenTo: 100,
-                       greenColor: 'LightGray',
-                       min: 0,
-                       max: 100,
-                       minorTicks: 10
-                   };
+                    var options = {
+                        width: gauge_size,
+                        height: gauge_size,
+                        greenFrom: 0,
+                        greenTo: 100,
+                        greenColor: 'LightGray',
+                        min: 0,
+                        max: 100,
+                        minorTicks: 10
+                    };
 
-                   var chart = new google.visualization.Gauge(document.getElementById('humidity-gauge'));
-                   chart.draw(data, options);
+                    var chart = new google.visualization.Gauge(document.getElementById('humidity-gauge'));
+                    chart.draw(data, options);
 
-               }
+                }
 
-               function drawChart3() {
+                function drawChart3() {
 
-                   var data = google.visualization.arrayToDataTable([
-                       ['Label', 'Value'],
-                       ['Light', $data[light]]
-                   ]);
+                    var data = google.visualization.arrayToDataTable([
+                        ['Label', 'Value'],
+                        ['', $data[light]]
+                    ]);
 
-                   var options = {
-                       width: $gauge_size,
-                       height: $gauge_size,
-                       greenFrom: 0,
-                       greenTo: 100,
-                       greenColor: 'LightGray',
-                       min: 0,
-                       max: 100,
-                       minorTicks: 10
-                   };
+                    var options = {
+                        width: gauge_size,
+                        height: gauge_size,
+                        greenFrom: 0,
+                        greenTo: 100,
+                        greenColor: 'LightGray',
+                        min: 0,
+                        max: 100,
+                        minorTicks: 10
+                    };
 
-                   var chart = new google.visualization.Gauge(document.getElementById('light-gauge'));
-                   chart.draw(data, options);
+                    var chart = new google.visualization.Gauge(document.getElementById('light-gauge'));
+                    chart.draw(data, options);
 
-               }
+                }
             });
+
+
+            $(document).ready(function(){
+                var data = [
+                    {
+                        data: [
+                            $temperature_list
+                        ],
+                        //label: 'Temperature',
+                        color: 'green'
+                    }
+                ];
+                var options = {
+                    legend: {
+                        position: 'se',
+                    },
+                    xaxis: {
+                        mode: 'time'
+                        //timezone: 'browser'
+                    }
+                };
+
+                $.plot($('#temperature-chart'), data, options);
+            });
+
+            $(document).ready(function(){
+                var data = [
+                    {
+                        data: [
+                            $humidity_list
+                        ],
+                        //label: 'humidity',
+                        color: 'blue'
+                    }
+                ];
+                var options = {
+                    legend: {
+                        position: 'se',
+                    },
+                    xaxis: {
+                        mode: 'time'
+                        //timezone: 'browser'
+                    }
+                };
+
+                $.plot($('#humidity-chart'), data, options);
+            });
+
+            $(document).ready(function(){
+                var data = [
+                    {
+                        data: [
+                            $light_list
+                        ],
+                        //label: 'light',
+                        color: 'red'
+                    }
+                ];
+                var options = {
+                    legend: {
+                        position: 'se',
+                    },
+                    xaxis: {
+                        mode: 'time'
+                        //timezone: 'browser'
+                    }
+                };
+
+                $.plot($('#light-chart'), data, options);
+            });
+
+
+
         </script>
     </body>
 </html>
