@@ -99,6 +99,45 @@ function show_page() {
             <div class='panel panel-default'>
                 <div class='panel-heading'>
                     <b>
+                        TEST
+                        <span class='pull-right'>$data[local_date]</span>
+                    </b>
+                </div>
+                <div class='panel-body'>
+                    <div>
+                        <table id='readings' width='100%' border='0' cellpadding='0' cellspacing='0'>
+                            <tr>
+                                <td align='center'>
+                                    <small>Temperatura</small>
+                                </td>
+                                <td align='center'>
+                                    <small>Humitat</small>
+                                </td>
+                                <td align='center'>
+                                    <small>Llum</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td align='center'>
+                                     <div id='chart-container2'></div>
+                                </td>
+                                <td align='center'>
+                                    <div id='chart-container1'></div>
+                                </td>
+                                <td align='center'>
+                                    <div id='chart-container3'></div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <div class='panel panel-default'>
+                <div class='panel-heading'>
+                    <b>
                         $data[short_time]
                         <span class='pull-right'>$data[local_date]</span>
                     </b>
@@ -178,7 +217,6 @@ function show_page() {
                 </div>
             </div>
 
-
         </div>
 
         <script src='bower_components/jquery/dist/jquery.min.js'></script>
@@ -192,168 +230,305 @@ function show_page() {
 
         <script src='https://www.gstatic.com/charts/loader.js'></script>
 
+        <script type='text/javascript' src='bower_components/fusioncharts/fusioncharts.js'></script>
+        <script type='text/javascript' src='bower_components/fusioncharts/themes/fusioncharts.theme.fint.js'></script>
+
+    </head>
         <script>
-            $(document).ready(function() {
-
-                gauge_size = $('#readings').width() / 3;
-                if (gauge_size > 200) gauge_size = 200;
-                console.log(gauge_size);
-
-                google.charts.load('current', {
-                    'packages': ['gauge']
-                });
-
-                google.charts.setOnLoadCallback(drawChart1);
-                google.charts.setOnLoadCallback(drawChart2);
-                google.charts.setOnLoadCallback(drawChart3);
-
-                function drawChart1() {
-
-                    var data = google.visualization.arrayToDataTable([
-                        ['Label', 'Value'],
-                        ['°C', $data[temperature]]
-                    ]);
-
-                    var options = {
-                        width: gauge_size,
-                        height: gauge_size,
-                        greenFrom: 0,
-                        greenTo: 15,
-                        yellowFrom: 15,
-                        yellowTo: 25,
-                        redFrom: 25,
-                        redTo: 40,
-                        greenColor: 'LightSkyBlue',
-                        yellowColor: 'Bisque',
-                        redColor: 'LightCoral',
-                        min: 0,
-                        max: 40,
-                        minorTicks: 5
-                    };
-
-                    var chart = new google.visualization.Gauge(document.getElementById('temperature-gauge'));
-                    chart.draw(data, options);
-                }
 
 
-                function drawChart2() {
+$(document).ready(function() {
 
-                    var data = google.visualization.arrayToDataTable([
-                        ['Label', 'Value'],
-                        ['%', $data[humidity]]
-                    ]);
+    var gauge_size = $('#readings').width() / 3;
+    if (gauge_size > 200) gauge_size = 200;
+    console.log(gauge_size);
 
-                    var options = {
-                        width: gauge_size,
-                        height: gauge_size,
-                        greenFrom: 0,
-                        greenTo: 100,
-                        greenColor: 'LightGray',
-                        min: 0,
-                        max: 100,
-                        minorTicks: 10
-                    };
+    google.charts.load('current', {
+        'packages': ['gauge']
+    });
 
-                    var chart = new google.visualization.Gauge(document.getElementById('humidity-gauge'));
-                    chart.draw(data, options);
+    google.charts.setOnLoadCallback(drawChart1);
+    google.charts.setOnLoadCallback(drawChart2);
+    google.charts.setOnLoadCallback(drawChart3);
 
-                }
+    function drawChart1() {
 
-                function drawChart3() {
+        var data = google.visualization.arrayToDataTable([
+            ['Label', 'Value'],
+            ['°C', $data[temperature]]
+        ]);
 
-                    var data = google.visualization.arrayToDataTable([
-                        ['Label', 'Value'],
-                        ['', $data[light]]
-                    ]);
+        var options = {
+            width: gauge_size,
+            height: gauge_size,
+            greenFrom: 0,
+            greenTo: 15,
+            yellowFrom: 15,
+            yellowTo: 25,
+            redFrom: 25,
+            redTo: 40,
+            greenColor: 'LightSkyBlue',
+            yellowColor: 'Bisque',
+            redColor: 'LightCoral',
+            min: 0,
+            max: 40,
+            minorTicks: 5
+        };
 
-                    var options = {
-                        width: gauge_size,
-                        height: gauge_size,
-                        greenFrom: 0,
-                        greenTo: 100,
-                        greenColor: 'LightGray',
-                        min: 0,
-                        max: 100,
-                        minorTicks: 10
-                    };
-
-                    var chart = new google.visualization.Gauge(document.getElementById('light-gauge'));
-                    chart.draw(data, options);
-
-                }
-            });
+        var chart = new google.visualization.Gauge(document.getElementById('temperature-gauge'));
+        chart.draw(data, options);
+    }
 
 
-            $(document).ready(function(){
-                var data = [
-                    {
-                        data: [
-                            $temperature_list
-                        ],
-                        //label: 'Temperature',
-                        color: 'green'
-                    }
-                ];
-                var options = {
-                    legend: {
-                        position: 'se',
-                    },
-                    xaxis: {
-                        mode: 'time'
-                        //timezone: 'browser'
-                    }
-                };
+    function drawChart2() {
 
-                $.plot($('#temperature-chart'), data, options);
-            });
+        var data = google.visualization.arrayToDataTable([
+            ['Label', 'Value'],
+            ['%', $data[humidity]]
+        ]);
 
-            $(document).ready(function(){
-                var data = [
-                    {
-                        data: [
-                            $humidity_list
-                        ],
-                        //label: 'humidity',
-                        color: 'blue'
-                    }
-                ];
-                var options = {
-                    legend: {
-                        position: 'se',
-                    },
-                    xaxis: {
-                        mode: 'time'
-                        //timezone: 'browser'
-                    }
-                };
+        var options = {
+            width: gauge_size,
+            height: gauge_size,
+            greenFrom: 0,
+            greenTo: 100,
+            greenColor: 'LightGray',
+            min: 0,
+            max: 100,
+            minorTicks: 10
+        };
 
-                $.plot($('#humidity-chart'), data, options);
-            });
+        var chart = new google.visualization.Gauge(document.getElementById('humidity-gauge'));
+        chart.draw(data, options);
 
-            $(document).ready(function(){
-                var data = [
-                    {
-                        data: [
-                            $light_list
-                        ],
-                        //label: 'light',
-                        color: 'red'
-                    }
-                ];
-                var options = {
-                    legend: {
-                        position: 'se',
-                    },
-                    xaxis: {
-                        mode: 'time'
-                        //timezone: 'browser'
-                    }
-                };
+    }
 
-                $.plot($('#light-chart'), data, options);
-            });
+    function drawChart3() {
+
+        var data = google.visualization.arrayToDataTable([
+            ['Label', 'Value'],
+            ['', $data[light]]
+        ]);
+
+        var options = {
+            width: gauge_size,
+            height: gauge_size,
+            greenFrom: 0,
+            greenTo: 100,
+            greenColor: 'LightGray',
+            min: 0,
+            max: 100,
+            minorTicks: 10
+        };
+
+        var chart = new google.visualization.Gauge(document.getElementById('light-gauge'));
+        chart.draw(data, options);
+
+    }
+});
 
 
+$(document).ready(function() {
+    var data = [{
+        data: [
+            $temperature_list
+        ],
+        //label: 'Temperature',
+        color: 'green'
+    }];
+    var options = {
+        legend: {
+            position: 'se',
+        },
+        xaxis: {
+            mode: 'time'
+                //timezone: 'browser'
+        }
+    };
+
+    $.plot($('#temperature-chart'), data, options);
+});
+
+$(document).ready(function() {
+    var data = [{
+        data: [
+            $humidity_list
+        ],
+        //label: 'humidity',
+        color: 'blue'
+    }];
+    var options = {
+        legend: {
+            position: 'se',
+        },
+        xaxis: {
+            mode: 'time'
+                //timezone: 'browser'
+        }
+    };
+
+    $.plot($('#humidity-chart'), data, options);
+});
+
+$(document).ready(function() {
+    var data = [{
+        data: [
+            $light_list
+        ],
+        //label: 'light',
+        color: 'red'
+    }];
+    var options = {
+        legend: {
+            position: 'se',
+        },
+        xaxis: {
+            mode: 'time'
+                //timezone: 'browser'
+        }
+    };
+
+    $.plot($('#light-chart'), data, options);
+});
+
+
+
+$(document).ready(function() {
+    var gauge_size = $('#readings').width() / 3;
+    var oR = 70;
+    var iR = 65;
+    var csatGauge = new FusionCharts({
+        'type': 'angulargauge',
+        'renderAt': 'chart-container1',
+        'width': gauge_size,
+        'height': gauge_size,
+        'dataFormat': 'json',
+        'dataSource': {
+            'chart': {
+                'numbersuffix': '%',
+                'lowerLimit': '0',
+                'upperLimit': '100',
+                'gaugeFillMix': '{dark-40},{light-40},{dark-20}',
+                'gaugeFillRatio': '85',
+                'gaugeOuterRadius': oR,
+                'gaugeInnerRadius': iR,
+                'pivotRadius': '10',
+                'showValue': '1',
+                'majorTMNumber': '5',
+                'minorTMNumber': '2',
+                'gaugeStartAngle': '155',
+                'gaugeEndAngle': '25',
+
+                'theme': 'fint'
+            },
+            'colorRange': {
+                'color': [{
+                    'minValue': '0',
+                    'maxValue': '33',
+                    'code': '#FF8080'
+                }, {
+                    'minValue': '33',
+                    'maxValue': '66',
+                    'code': '#80FF80'
+                }, {
+                    'minValue': '66',
+                    'maxValue': '100',
+                    'code': '#8080FF'
+                }]
+            },
+            'dials': {
+                'dial': [{
+                    'bgColor': '#666666,#FFFFFF,#666666',
+                    'value': '$data[humidity]'
+                }]
+            }
+        }
+    });
+
+    csatGauge.render();
+});
+
+
+// *************************************************
+
+
+
+$(document).ready(function() {
+    var gauge_size = $('#readings').width() / 3;
+    var thermo = new FusionCharts({
+        'type': 'thermometer',
+        'renderAt': 'chart-container2',
+        'width': gauge_size,
+        'height': gauge_size,
+        'dataFormat': 'json',
+        'dataSource': {
+            'chart': {
+                'subcaptionFontBold': '0',
+                'thmBulbRadius': '12',
+                'lowerLimit': '-5',
+                'upperLimit': '40',
+                'numberSuffix': '°C',
+                'bgColor': '#ffffff',
+                'showBorder': '0',
+                'thmFillColor': '#008ee4',
+                'showTickMarks': '0',
+                'showTickValues': '0'
+            },
+            'value': '$data[temperature]'
+        }
+    });
+
+    thermo.render();
+});
+
+
+
+// *************************************************
+
+
+
+$(document).ready(function() {
+    var gauge_size = $('#readings').width() / 3;
+    var radius = $data[light] * gauge_size/100.0 / 1.5;
+    console.log('gauge_size = ', gauge_size);
+    console.log('radius = ', radius);
+    var bulb = new FusionCharts({
+        'type': 'bulb',
+        'renderAt': 'chart-container3',
+        'width': gauge_size,
+        'height': gauge_size,
+        'dataFormat': 'json',
+        'dataSource': {
+            'chart': {
+                'manageresize': '1',
+                'bgcolor': 'ffffff',
+                'decimals': '0',
+                'numbersuffix': '%',
+                'lowerlimit': '0',
+                'upperlimit': '100',
+                'showborder': '0',
+                'is3D': '1',
+                'placeValuesInside': '1',
+                'gaugeRadius': radius
+            },
+            'colorrange': {
+                'color': [{
+                    'minvalue': '0',
+                    'maxvalue': '10',
+                    'code': '808080'
+                }, {
+                    'minvalue': '10',
+                    'maxvalue': '100',
+                    'code': 'F0F0A0'
+                }, ]
+            },
+            'value': '$data[light]'
+
+        }
+    });
+
+    bulb.render();
+});
 
         </script>
     </body>
