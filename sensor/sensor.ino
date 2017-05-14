@@ -83,7 +83,7 @@ void printWifiStatus()
     Serial.print("SSID: ");
     Serial.println(WiFi.SSID());
 
-    // print your WiFi shield's IP address
+    // print IP address
     IPAddress ip = WiFi.localIP();
     Serial.print("IP Address: ");
     Serial.println(ip);
@@ -125,11 +125,11 @@ int read_light() {
 void send_wifi(const char* data) {
     if (use_wifi) {
         if (not client.connected()) client.stop();
-        if (client.connect(MY_SERVER, MY_PORT)) {
+        if (client.connect(server, port)) {
             Serial.println("Connected to server");
             client.print(data);
         } else {
-            Serial.println("CATXIS NOT Connected to server");
+            Serial.println("Cannot connect to server");
         }
     }
     Serial.print("time: ");
@@ -161,9 +161,9 @@ void sense_and_send() {
     byte humidity = 255;
     read_DHT11(temperature, humidity);
     int light = read_light();
-    char data[MaxLen];
-    snprintf(data, MaxLen, "%s:%d:%d:%d", key, temperature, humidity, light);
-    send_wifi(data);
+    char info[MaxLen];
+    snprintf(info, MaxLen, "%s:%d:%d:%d", key, temperature, humidity, light);
+    send_wifi(info);
     digitalWrite(Pin_Led, LOW);
 }
 
@@ -217,7 +217,10 @@ void setup() {
     }
 
     // Start
-    send_wifi("hello");
+    char info[MaxLen];
+    snprintf(info, MaxLen, "%s:hello", key);
+    send_wifi(info);
+
     sense_and_send();
     last = millis();
 }
@@ -228,7 +231,9 @@ void setup() {
 
 void loop() {
     // Read the answer from the server if needed and copy it to console
-    while (client.available()) Serial.print(char(client.read()));
+    while (client.available()) {
+        Serial.print(char(client.read()));
+    }
 
     // Check time
     unsigned long time_since_last = millis() - last;
