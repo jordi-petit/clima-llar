@@ -17,6 +17,9 @@ def current_datetime():
 
 def serve(ip, port, directory):
 
+    now = current_datetime()
+    print(f"starting server {now}", flush=True)
+
     sock = socket.socket()
     sock.bind((ip, port))
     sock.listen()
