@@ -7,14 +7,15 @@ Runs the ClimaLlar server.
 
 import argparse
 import datetime
+import os
 import socket
 
 
-def time():
+def current_datetime():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def serve(ip, port, database):
+def serve(ip, port, directory):
 
     sock = socket.socket()
     sock.bind((ip, port))
@@ -23,11 +24,19 @@ def serve(ip, port, database):
 
     while True:
         conn, addr = sock.accept()
-        data = conn.recv(1024).decode()
-        if data is not None:
-            info = str(data)
-            print("%s %s %s" % (time(), addr[0], info), flush=True)
+        now = current_datetime()
+        date, time = now.split()
+        info = conn.recv(1024).decode()
+        key = info.split(":")[0]
+        reply = "ok" if key == "home" else "error"  # TBD: Improve key verification
+        conn.send(reply.encode())
         conn.close()
+
+        if reply == "ok":
+            os.makedirs(f"{directory}/{key}", exist_ok=True)
+            with open(f"{directory}/{key}/{date}.txt", "a") as f:
+                f.write(f"{now} {addr[0]} {info}\n")
+        print(f"{reply} {now} {addr[0]} {info}", flush=True)
 
 
 def main():
@@ -38,11 +47,11 @@ def main():
     parser = argparse.ArgumentParser(description="Runs the ClimaLlar server.")
 
     parser.add_argument("-p", "--port", type=int, help="port number", default=9876)
-    parser.add_argument("-d", "--database", type=str, help="database name", default="dbname")
+    parser.add_argument("-d", "--directory", type=str, help="output directory", default=".")
 
     args = parser.parse_args()
 
-    serve(ip, args.port, args.database)
+    serve(ip, args.port, args.directory)
 
 
 if __name__ == "__main__":
