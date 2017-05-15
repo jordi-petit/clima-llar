@@ -7,8 +7,10 @@ Runs the ClimaLlar server.
 
 import argparse
 import datetime
+import logging
 import os
 import socket
+import time
 
 
 def current_datetime():
@@ -18,12 +20,10 @@ def current_datetime():
 def serve(ip, port, directory):
 
     now = current_datetime()
-    print(f"starting server {now}", flush=True)
-
     sock = socket.socket()
     sock.bind((ip, port))
     sock.listen()
-    print("listening at %s:%s" % (ip, port))
+    logging.info(f"clima-llar sensor starting at {ip}:{port}")
 
     while True:
         conn, addr = sock.accept()
@@ -39,7 +39,7 @@ def serve(ip, port, directory):
             os.makedirs(f"{directory}/{key}", exist_ok=True)
             with open(f"{directory}/{key}/{date}.txt", "a") as f:
                 f.write(f"{now} {addr[0]} {info}\n")
-        print(f"{reply} {now} {addr[0]} {info}", flush=True)
+        logging.info(f"{reply} {addr[0]} {info}")
 
 
 def main():
@@ -50,11 +50,23 @@ def main():
     parser = argparse.ArgumentParser(description="Runs the ClimaLlar server.")
 
     parser.add_argument("-p", "--port", type=int, help="port number", default=9876)
-    parser.add_argument("-d", "--directory", type=str, help="output directory", default=".")
+    parser.add_argument("-d", "--directory", type=str, help="output directory (defaults to .)", default=".")
+    parser.add_argument("-l", "--logfile", type=str, help="log file (defaults to server.log, use None for stdout)", default="server.log")
 
     args = parser.parse_args()
+    if args.logfile == "None":
+        args.logfile = None
 
-    serve(ip, args.port, args.directory)
+    logging.basicConfig(level=logging.DEBUG,
+        format="%(asctime)s %(levelname)s %(message)s",
+        filename=args.logfile)
+
+    while True:
+        try:
+            serve(ip, args.port, args.directory)
+        except Exception as exc:
+            logging.error(f"{exc}")
+            time.sleep(1)
 
 
 if __name__ == "__main__":
