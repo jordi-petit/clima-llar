@@ -17,7 +17,6 @@
   "dependencies": {
     "jquery": "",
     "bootstrap": "",
-    "flot": "",
     "fusioncharts": "",
     "font-awesome": ""
   }

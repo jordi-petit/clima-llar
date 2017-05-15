@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+
+    <meta charset='utf-8'/>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'/>
+    <meta name='viewport' content='width=device-width, initial-scale=1'/>
+
+    <title>clima-llar-app</title>
+
+    <link href='bower_components/bootstrap/dist/css/bootstrap.min.css' rel='stylesheet'/>
+    <link rel='shortcut icon' href='favicon.ico'/>
+
+    <script type="text/javascript" src="bower_components/jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript" src="bower_components/fusioncharts/fusioncharts.js"></script>
+    <script type="text/javascript" src="bower_components/fusioncharts/themes/fusioncharts.theme.fint.js"></script>
+    <script type="text/javascript" src='bower_components/bootstrap/dist/js/bootstrap.min.js'></script>
+    <script type="text/javascript" src='app.js'></script>
+
+</head>
+
+<body>
+
+    <div class='container'>
+        <br/>
+
+        <div class='jumbotron' style='padding-top: 6px; padding-bottom: 6px;'>
+            <h1 id='elem-title'>Clima Llar App</h1>
+            <p id='elem-subtitle'>Home</p>
+        </div>
+
+        <div class='panel panel-default'>
+            <div class='panel-heading'>
+                <b>
+                    <span id='elem-time'>Hora</span>
+                    <span id='elem-date' class='pull-right'>Data</span>
+                </b>
+            </div>
+            <div class='panel-body' id='panel'>
+                <table id='readings' style='width: 100%; display: none;'>
+                    <tr>
+                        <td style='text-align: center'>
+                            <small>Temperatura</small>
+                        </td>
+                        <td style='text-align: center'>
+                            <small>Humitat</small>
+                        </td>
+                        <td style='text-align: center'>
+                            <small>Llum</small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td valign='center' style='text-align: center'>
+                             <div id='elem-temperature'></div>
+                        </td>
+                        <td valign='center' style='text-align: center'>
+                            <div id='elem-humidity'></div>
+                        </td>
+                        <td valign='center' style='text-align: center'>
+                            <div id='elem-light'></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='text-align: center'>
+                             <small id='elem-temperature-value'>??</small>
+                        </td>
+                        <td style='text-align: center'>
+                            <small id='elem-humidity-value'>??</small>
+                        </td>
+                        <td style='text-align: center'>
+                            <small id='elem-light-value'>??</small>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+
+    </div>
+
+</body>
+
+</html>
+
