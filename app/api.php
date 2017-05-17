@@ -18,7 +18,7 @@ function home_page() {
         time        => $inf1[1],
         temperature => $inf2[1],
         humidity    => $inf2[2],
-        light       => (int)($inf2[3] * 100 / 1024),
+        light       => (int)($inf2[3] * 100 / 1024) * 2,        // 2 is a self adjusted factor
     );
     print(json_encode($data));
 }

@@ -2,10 +2,6 @@ var temperature_chart = null;
 var humidity_chart = null;
 var light_chart = null;
 
-var temperature_histo_chart = null;
-var humidity_histo_chart = null;
-var light_histo_chart = null;
-
 var temperature_data = {
     chart: {
         subcaptionFontBold: 0,
@@ -14,7 +10,7 @@ var temperature_data = {
         upperLimit: 40,
         numberSuffix: "°C",
         bgColor: "#ffffff",
-        thmFillColor: "#008ee4",
+        thmFillColor: "#ff2020",
         showBorder: 0,
         showValue: 0,
         showTickMarks: 0,
@@ -25,25 +21,25 @@ var temperature_data = {
 
 var humidity_data = {
     chart: {
-        numbersuffix: '%',
-        lowerLimit: '0',
-        upperLimit: '100',
-        gaugeFillMix: '{dark-40},{light-40},{dark-20}',
-        gaugeFillRatio: '85',
-        gaugeOuterRadius: 50,
-        gaugeInnerRadius: 45,
-        pivotRadius: '10',
-        showValue: '1',
-        majorTMNumber: '8',
-        minorTMNumber: '2',
-        gaugeStartAngle: '155',
-        gaugeEndAngle: '25',
+        numbersuffix: "%",
+        lowerLimit: "0",
+        upperLimit: "100",
+        gaugeFillMix: "{dark-40},{light-40},{dark-20}",
+        gaugeFillRatio: "85",
+        gaugeOuterRadius: 70,
+        gaugeInnerRadius: 40,
+        pivotRadius: "10",
+        showValue: "1",
+        majorTMNumber: "8",
+        minorTMNumber: "2",
+        gaugeStartAngle: 135,
+        gaugeEndAngle: 45,
         showTickValues: 0,
-        theme: 'fint'
+        theme: "fint"
     },
     dials: {
         dial: [{
-            bgColor: '#666666,#FFFFFF,#666666',
+            bgColor: "#666666,#FFFFFF,#666666",
         showValue: 0,
             value: 0
         }]
@@ -75,12 +71,15 @@ var light_data = {
             code: "F0F0A0"
         }]
     },
-    value: 50
+    value: 0
 };
 
 
+
+
+
 $(document).ready(function() {
-    var width = Math.trunc($('#panel').width() / 3);
+    var width = Math.trunc($("#readings").width() / 3);
 
     temperature_chart = new FusionCharts({
         type: "thermometer",
@@ -93,11 +92,11 @@ $(document).ready(function() {
     temperature_chart.render();
 
     humidity_chart = new FusionCharts({
-        type: 'angulargauge',
-        renderAt: 'elem-humidity',
+        type: "angulargauge",
+        renderAt: "elem-humidity",
         width: width,
         height: 120,
-        dataFormat: 'json',
+        dataFormat: "json",
         dataSource: humidity_data
     });
     humidity_chart.render();
@@ -118,7 +117,6 @@ $(document).ready(function() {
 
 function update() {
     $.getJSON("api.php", function(data) {
-        console.log(data);
 
         temperature_data.value = data.temperature;
         humidity_data.dials.dial[0].value = data.humidity;
@@ -135,16 +133,57 @@ function update() {
         $("#elem-temperature-value").html(data.temperature+"°C");
         $("#elem-humidity-value").html(data.humidity+"%");
         $("#elem-light-value").html(data.light+"%");
-
-        if (false) {
-            // reanimate the change
-            temperature_chart.render();
-            humidity_chart.render();
-            light_chart.render();
-        }
-        $("#readings").show();
     });
+
+
+    $.getJSON("api2.php", function(readings) {
+        var temperature_histo = [];
+        var humidity_histo = [];
+        var light_histo = [];
+
+        var c = 0;
+        for (reading of readings) {
+            if (++c % 5 != 0) continue;
+            var dt = new Date(reading.datetime).getTime();
+            if (reading.temperature != 255) temperature_histo.push([dt, reading.temperature]);
+            if (reading.humidity != 255) humidity_histo.push([dt, reading.humidity]);
+            if (reading.light != 255) light_histo.push([dt, reading.light]);
+        }
+
+        var temperature_conf = [
+            {
+                data: temperature_histo,
+                color: "red"
+            }
+        ];
+        var humidity_conf = [
+            {
+                data: humidity_histo,
+                color: "blue"
+            }
+        ];
+        var light_conf = [
+            {
+                data: light_histo,
+                color: "green"
+            }
+        ];
+
+        var ops = {
+            xaxis: {
+                mode: "time",
+                timezone: "browser"
+            }
+        };
+
+        $.plot($("#temperature-histo"), temperature_conf, ops);
+        $.plot($("#humidity-histo"), humidity_conf, ops);
+        $.plot($("#light-histo"), light_conf, ops);
+    });
+
+
 }
 
 
-setInterval(update, 20 * 1000);     // update each 20 seconds
+
+setInterval(update, 60000);  // refresh each minute
