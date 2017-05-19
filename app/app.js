@@ -111,6 +111,17 @@ $(document).ready(function() {
     });
     light_chart.render();
 
+    $('#calendar').datetimepicker({
+        inline: true,
+        sideBySide: false,
+        format: "YYYY-MM-dd",
+        locale: "ca"
+    })
+    .on('dp.change',function(e){
+        console.log(e);
+        console.log(e.date._d);
+    });
+
     update();
 });
 

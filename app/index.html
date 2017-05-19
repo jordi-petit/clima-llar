@@ -13,9 +13,6 @@
     <meta name='mobile-web-app-capable' content='yes'>
     <meta name='apple-mobile-web-app-capable' content='yes'>
 
-    <!-- bootstrap -->
-    <link href='bower_components/bootstrap/dist/css/bootstrap.min.css' rel='stylesheet'/>
-
     <!-- favicon -->
     <link rel='shortcut icon' href='favicon.ico'/>
 
@@ -23,7 +20,16 @@
     <script type="text/javascript" src="bower_components/jquery/dist/jquery.min.js"></script>
 
     <!-- bootstrap -->
+    <link href='bower_components/bootstrap/dist/css/bootstrap.min.css' rel='stylesheet'/>
     <script type="text/javascript" src='bower_components/bootstrap/dist/js/bootstrap.min.js'></script>
+
+    <!-- moment -->
+    <script type="text/javascript" src="bower_components/moment/min/moment.min.js"></script>
+    <script type="text/javascript" src="bower_components/moment/min/locales.js"></script>
+
+    <!-- bootstrap datetime picker -->
+    <script type="text/javascript" src="bower_components/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
+    <link rel="stylesheet" href="bower_components/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" />
 
     <!-- fusioncharts -->
     <script type="text/javascript" src="bower_components/fusioncharts/fusioncharts.js"></script>
@@ -147,6 +153,26 @@
             </div>
 
         </div>
+
+        <div class='row'>
+            <div class='col-md-6'>
+                <div class='panel panel-default'>
+                    <div class='panel-heading'>
+                        <b>
+                            Calendari
+                        </b>
+                    </div>
+                    <div class='panel-body'>
+                        <div style="overflow:hidden;">
+                            <div class="form-group">
+                                <div id="calendar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
 </body>
