@@ -1,86 +1,121 @@
 import os
-import time
+import datetime
 import sqlite3
 
-from flask import Flask, jsonify, g
+from flask import Flask, jsonify, g, request
 
 
 app = Flask(__name__)
 
 
-app.config['DATABASE'] = os.path.expanduser('~/clima-llar.db')
+app.config["DATABASE"] = os.path.expanduser("~/clima-llar.db")
 
+
+def current_datetime():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def current_date():
+    return datetime.datetime.now().strftime("%Y-%m-%d")
 
 
 def connect_db():
     """Connects to the specific database."""
-    rv = sqlite3.connect(app.config['DATABASE'])
+    rv = sqlite3.connect(app.config["DATABASE"])
     rv.row_factory = sqlite3.Row
     return rv
 
 
+@app.teardown_appcontext
+def close_db(error):
+    """Closes the database at the end of the request."""
+    if hasattr(g, "sqlite_db"):
+        g.sqlite_db.close()
+
+
 def get_db():
-    """Opens a new database connection if there is none yet for the
-    current application context.
-    """
-    if not hasattr(g, 'sqlite_db'):
+    """Opens a new database connection if there is none yet for the current application context."""
+    if not hasattr(g, "sqlite_db"):
         g.sqlite_db = connect_db()
     return g.sqlite_db
 
 
-@app.teardown_appcontext
-def close_db(error):
-    """Closes the database again at the end of the request."""
-    if hasattr(g, 'sqlite_db'):
-        g.sqlite_db.close()
+def fetchone(*sql):
+    dbc = get_db()
+    cur = dbc.execute(*sql)
+    row = cur.fetchone()
+    if row is None:
+        return None
+    else:
+        return dict(row)
+
+
+def fetchall(*sql):
+    dbc = get_db()
+    cur = dbc.execute(*sql)
+    rows = cur.fetchall()
+    return [dict(row) for row in rows]
+
+
+def fetchcol(*sql):
+    dbc = get_db()
+    cur = dbc.execute(*sql)
+    rows = cur.fetchall()
+    return [row[0] for row in rows]
 
 
 def day_readings(place_id, date):
-    dbc = get_db()
-    cur = dbc.execute('select moment, temperature, humidity, light from readings where date(moment) = ? and place_id = ? order by moment', [date, place_id])
-    rows = cur.fetchall()
-
-    output = []
-    for row in rows:
-        output.append({
-            'moment': row[0],
-            'temperature': row[1],
-            'humidity': row[2],
-            'light': row[3]
-        })
-
-    return jsonify(output)
+    return jsonify(fetchall("select moment, temperature, humidity, light from readings where date(moment) = ? and place_id = ? order by moment", [date, place_id]))
 
 
-@app.route('/')
-def hello_world():
-    return 'Hello, World!\n'
+@app.route("/")
+def root():
+    """Returns the list of available places."""
+    return jsonify(fetchall("select * from places order by place_id"))
 
 
-@app.route('/<place_id>/now')
-def get_now(place_id):
-    dbc = get_db()
-    cur = dbc.execute('select moment, temperature, humidity, light from readings where place_id = ? order by moment desc limit 1', [place_id])
-    row = cur.fetchone()
-
-    return jsonify(
-        moment=row[0],
-        temperature=row[1],
-        humidity=row[2],
-        light=row[3]
-    )
+@app.route("/<place_id>")
+def get_current(place_id):
+    """Returns the latest readings of a given place."""
+    return jsonify(fetchone("select moment, temperature, humidity, light from readings where place_id = ? order by moment desc limit 1", [place_id]))
 
 
-@app.route('/<place_id>/today')
+@app.route("/<place_id>/submit")
+def submit(place_id):
+    """Adds a new reading for a given place_id."""
+    try:
+        moment = current_datetime()
+        ip = request.remote_addr
+        temperature = float(request.args["temperature"])
+        humidity = float(request.args["humidity"])
+        light = float(request.args["light"])
+        db = get_db()
+        db.execute('insert into readings (moment, ip, place_id, temperature, humidity, light) values (?,?,?,?,?,?)',
+            [moment, ip, place_id, temperature, humidity, light])
+        db.commit()
+        return "ok"
+    except Exception as exc:
+        print(exc)
+        return f"error: {exc}"
+
+
+@app.route("/<place_id>/dates")
+def get_dates(place_id):
+    """Returns the available dates with readings of a given place."""
+    return jsonify(fetchcol("select distinct date(moment) as date from readings where place_id = ? order by date desc", [place_id]))
+
+
+@app.route("/<place_id>/dates/today")
 def get_today(place_id):
-    today = time.strftime("%Y-%m-%d")
+    """Returns the readings of a given place for today."""
+    today = current_date()
     return day_readings(place_id, today)
 
 
-@app.route('/<place_id>/date/<date>')
+@app.route("/<place_id>/dates/<date>")
 def get_date(place_id, date):
+    """Returns the readings of a given place and a given date."""
     return day_readings(place_id, date)
-
 
 
 if __name__ == "__main__":
