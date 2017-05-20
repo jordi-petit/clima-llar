@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+
+    <title>clima-llar-app</title>
+
+    <meta charset='utf-8'/>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'/>
+    <meta name='viewport' content='width=device-width, initial-scale=1'/>
+
+    <!-- let app be placed in phone menu -->
+    <meta name='mobile-web-app-capable' content='yes'>
+    <meta name='apple-mobile-web-app-capable' content='yes'>
+
+    <!-- favicon -->
+    <link rel='shortcut icon' href='favicon.ico'/>
+
+    <!-- jquery -->
+    <script type="text/javascript" src="/bower_components/jquery/dist/jquery.min.js"></script>
+
+    <!-- bootstrap -->
+    <link href='/bower_components/bootstrap/dist/css/bootstrap.min.css' rel='stylesheet'/>
+    <script type="text/javascript" src='/bower_components/bootstrap/dist/js/bootstrap.min.js'></script>
+
+    <!-- moment -->
+    <script type="text/javascript" src="/bower_components/moment/min/moment.min.js"></script>
+    <script type="text/javascript" src="/bower_components/moment/min/locales.js"></script>
+
+    <!-- bootstrap datetime picker -->
+    <script type="text/javascript" src="/bower_components/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
+    <link rel="stylesheet" href="/bower_components/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" />
+
+    <!-- fusioncharts -->
+    <script type="text/javascript" src="/bower_components/fusioncharts/fusioncharts.js"></script>
+    <script type="text/javascript" src="/bower_components/fusioncharts/themes/fusioncharts.theme.fint.js"></script>
+
+    <!-- flot charts -->
+    <script type="text/javascript"  src='/bower_components/flot/excanvas.min.js'></script>
+    <script type="text/javascript"  src='/bower_components/flot/jquery.flot.js'></script>
+    <script type="text/javascript"  src='/bower_components/flot/jquery.flot.pie.js'></script>
+    <script type="text/javascript"  src='/bower_components/flot/jquery.flot.resize.js'></script>
+    <script type="text/javascript"  src='/bower_components/flot/jquery.flot.time.js'></script>
+
+    <!-- this app -->
+    <script type="text/javascript" src='/app.js'></script>
+
+</head>
+
+<body>
+
+    <div class='container'>
+        <br/>
+
+        <div class='jumbotron' style='padding-top: 6px; padding-bottom: 6px;'>
+            <h1 id='elem-title'>Casa</h1>
+            <p id='elem-subtitle'>Clima Llar App</p>
+        </div>
+
+        <div class='row'>
+
+            <div class='col-md-6'>
+                <div class='panel panel-default'>
+                    <div class='panel-heading'>
+                        <b>
+                            <span id='elem-time'>Hora</span>
+                            <span id='elem-date' class='pull-right'>Data</span>
+                        </b>
+                    </div>
+                    <div class='panel-body'>
+                        <table id='readings' style='width: 100%; '>
+                            <tr>
+                                <td style='text-align: center'>
+                                    <small>Temperatura</small>
+                                </td>
+                                <td style='text-align: center'>
+                                    <small>Humitat</small>
+                                </td>
+                                <td style='text-align: center'>
+                                    <small>Llum</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style='text-align: center'>
+                                     <b><small id='elem-temperature-value'></small></b>
+                                </td>
+                                <td style='text-align: center'>
+                                    <b><small id='elem-humidity-value'></small></b>
+                                </td>
+                                <td style='text-align: center'>
+                                    <b><small id='elem-light-value'></small></b>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td valign='center' style='text-align: center'>
+                                     <div id='elem-temperature'></div>
+                                </td>
+                                <td valign='center' style='text-align: center'>
+                                    <div id='elem-humidity'></div>
+                                </td>
+                                <td valign='center' style='text-align: center'>
+                                    <div id='elem-light'></div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class='col-md-6'>
+                <div class='panel panel-default'>
+                    <div class='panel-heading'>
+                        <b>
+                            Temperatura
+                        </b>
+                    </div>
+                    <div class='panel-body'>
+                        <div class='flot-chart'>
+                            <div class='flot-chart-content' id='temperature-histo' style='height: 175px;'></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class='col-md-6'>
+                <div class='panel panel-default'>
+                    <div class='panel-heading'>
+                        <b>
+                            Humitat
+                        </b>
+                    </div>
+                    <div class='panel-body'>
+                        <div class='flot-chart'>
+                            <div class='flot-chart-content' id='humidity-histo' style='height: 175px;'></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class='col-md-6'>
+                <div class='panel panel-default'>
+                    <div class='panel-heading'>
+                        <b>
+                            Llum
+                        </b>
+                    </div>
+                    <div class='panel-body'>
+                        <div class='flot-chart'>
+                            <div class='flot-chart-content' id='light-histo' style='height: 175px;'></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class='row'>
+            <div class='col-md-6'>
+                <div class='panel panel-default'>
+                    <div class='panel-heading'>
+                        <b>
+                            Calendari
+                        </b>
+                    </div>
+                    <div class='panel-body'>
+                        <div style="overflow:hidden;">
+                            <div class="form-group">
+                                <div id="calendar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
+

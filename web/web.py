@@ -2,7 +2,7 @@ import os
 import datetime
 import sqlite3
 
-from flask import Flask, jsonify, g, request
+from flask import Flask, jsonify, g, request, send_file, send_from_directory
 
 
 app = Flask(__name__)
@@ -70,17 +70,29 @@ def day_readings(place_id, date):
 
 @app.route("/")
 def root():
-    """Returns the list of available places."""
-    return jsonify(fetchall("select * from places order by place_id"))
+    """Returns the app web page."""
+    return send_file("index.html")
 
 
-@app.route("/<place_id>")
+@app.route("/app.js")
+def app_js():
+    """Returns the app script."""
+    return send_file("app.js")
+
+
+@app.route("/bower_components/<path:path>")
+def bower_components(path):
+    """Returns static files for bower_components."""
+    return send_from_directory("bower_components", path)
+
+
+@app.route("/api/<place_id>")
 def get_current(place_id):
     """Returns the latest readings of a given place."""
     return jsonify(fetchone("select moment, temperature, humidity, light from readings where place_id = ? order by moment desc limit 1", [place_id]))
 
 
-@app.route("/<place_id>/submit")
+@app.route("/api/<place_id>/submit")
 def submit(place_id):
     """Adds a new reading for a given place_id."""
     try:
@@ -99,20 +111,20 @@ def submit(place_id):
         return f"error: {exc}"
 
 
-@app.route("/<place_id>/dates")
+@app.route("/api/<place_id>/dates")
 def get_dates(place_id):
     """Returns the available dates with readings of a given place."""
     return jsonify(fetchcol("select distinct date(moment) as date from readings where place_id = ? order by date desc", [place_id]))
 
 
-@app.route("/<place_id>/dates/today")
+@app.route("/api/<place_id>/dates/today")
 def get_today(place_id):
     """Returns the readings of a given place for today."""
     today = current_date()
     return day_readings(place_id, today)
 
 
-@app.route("/<place_id>/dates/<date>")
+@app.route("/api/<place_id>/dates/<date>")
 def get_date(place_id, date):
     """Returns the readings of a given place and a given date."""
     return day_readings(place_id, date)
