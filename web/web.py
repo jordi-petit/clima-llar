@@ -140,30 +140,39 @@ def get_current(place_id):
     ))
 
 
-@app.route("/api/<place_id>/submit")
+@app.route("/api/<place_id>/submit", methods=['POST'])
 def submit(place_id):
     """Adds a new reading for a given place_id."""
-    assert place_exists(place_id)
+    # Sample request:
+    # curl -H "Content-Type=application/json" -X POST --data '{"temperature": 10, "light": 20, "humidity": 90}' http://localhost:5000/api/casa/submit
     try:
+        assert place_exists(place_id)
+
+        data = request.get_json(force=True)
         moment = current_datetime()
         ip = request.remote_addr
-        temperature = float(request.args["temperature"])
-        humidity = float(request.args["humidity"])
-        light = float(request.args["light"])
-        db = get_db()
-        db.execute(
-            """
-            INSERT INTO Readings (moment, ip, place_id,
-                temperature, humidity, light)
-            VALUES (?,?,?,?,?,?)
-            """,
-            [moment, ip, place_id, temperature, humidity, light]
-        )
-        db.commit()
-        return "ok"
+        temperature = float(data["temperature"])
+        humidity = float(data["humidity"])
+        light = float(data["light"])
+        fake = data.get("fake", False)
+
+        if not fake:
+            db = get_db()
+            db.execute(
+                """
+                INSERT INTO Readings (moment, ip, place_id,
+                    temperature, humidity, light)
+                VALUES (?,?,?,?,?,?)
+                """,
+                [moment, ip, place_id, temperature, humidity, light]
+            )
+            db.commit()
+            return jsonify(moment=moment, status="ok")
+        else:
+            return jsonify(moment=moment, status="ok", fake=True)
     except Exception as exc:
         print(exc)
-        return f"error: {exc}"
+        return jsonify(moment=moment, status="error", error=exc)
 
 
 @app.route("/api/<place_id>/dates")
