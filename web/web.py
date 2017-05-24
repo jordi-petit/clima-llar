@@ -118,6 +118,12 @@ def app_js():
     return send_file("app.js")
 
 
+@app.route("/favicon.ico")
+def favicon():
+    """Returns the favicon."""
+    return send_file("favicon.ico")
+
+
 @app.route("/bower_components/<path:path>")
 def bower_components(path):
     """Returns static files for bower_components."""
