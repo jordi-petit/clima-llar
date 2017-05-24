@@ -126,8 +126,15 @@ $(document).ready(function() {
 });
 
 
+function lux(x) {
+    return Math.round(x / 7.0);
+}
+
+
 function update() {
     $.getJSON("/api/casa", function(data) {
+
+        data.light = lux(data.light);
 
         temperature_data.value = data.temperature;
         humidity_data.dials.dial[0].value = data.humidity;
@@ -138,26 +145,28 @@ function update() {
         humidity_chart.setJSONData(humidity_data);
         light_chart.setJSONData(light_data);
 
-        $("#elem-date").html(data.date);
-        $("#elem-time").html(data.time);
+        var datetime = data.moment.split(" ");
+        $("#elem-date").html(datetime[0]);
+        $("#elem-time").html(datetime[1]);
 
         $("#elem-temperature-value").html(data.temperature+"°C");
         $("#elem-humidity-value").html(data.humidity+"%");
         $("#elem-light-value").html(data.light+"%");
     });
 
-    $.getJSON("/api/casa/dates/2017-05-18", function(readings) {
+    $.getJSON("/api/casa/dates/today", function(readings) {
+
         var temperature_histo = [];
         var humidity_histo = [];
         var light_histo = [];
 
         var c = 0;
         for (reading of readings) {
-            if (++c % 5 != 0) continue;
+             if (++c % 3 != 0) continue;
             var dt = new Date(reading.moment).getTime();
             if (reading.temperature != 255) temperature_histo.push([dt, reading.temperature]);
             if (reading.humidity != 255) humidity_histo.push([dt, reading.humidity]);
-            if (reading.light != 255) light_histo.push([dt, reading.light]);
+            if (reading.light != 255) light_histo.push([dt, lux(reading.light)]);
         }
 
         var temperature_conf = [
