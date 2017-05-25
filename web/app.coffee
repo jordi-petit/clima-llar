@@ -118,19 +118,11 @@ lux = (x) ->
     Math.round x / 7.0
 
 
-changeDate = (d) ->
-    date = d
-    $('.mydate').html date
-    $('#panel-now').hide()
-    $('#button-today').show()
-    $.getJSON '/api/casa/dates/' + date, (readings) ->
-        showReadings readings
-
-
 UpdateDates = ->
     $.getJSON '/api/casa/dates', (dates) ->
         ds = [moment d for d in dates]
-        $('#calendar').data('DateTimePicker').options enabledDates: ds
+        $('#calendar').data('DateTimePicker').options
+            enabledDates: ds
 
 
 UpdateReadings = ->
@@ -138,23 +130,31 @@ UpdateReadings = ->
         return
     $.getJSON '/api/casa', (data) ->
         data.light = lux(data.light)
+
         temperature_data.value = data.temperature
         humidity_data.dials.dial[0].value = data.humidity
         light_data.value = data.light
+
         light_data.chart.gaugeRadius = data.light / 2
         temperature_chart.setJSONData temperature_data
         humidity_chart.setJSONData humidity_data
         light_chart.setJSONData light_data
+
         datetime = data.moment.split(' ')
         $('#elem-date').html datetime[0]
         $('#elem-time').html datetime[1]
         $('#elem-temperature-value').html data.temperature + '°C'
         $('#elem-humidity-value').html data.humidity + '%'
         $('#elem-light-value').html data.light + '%'
-    $('.mydate').html 'Avui'
-    $('#panel-now').show()
-    $('#button-today').hide()
-    $.getJSON '/api/casa/dates/today', (readings) ->
+    clickToday()
+
+
+clickDate = (d) ->
+    date = d
+    $('.mydate').html date
+    $('#panel-now').hide()
+    $('#button-today').show()
+    $.getJSON "/api/casa/dates/#{date}", (readings) ->
         showReadings readings
 
 
@@ -169,11 +169,16 @@ clickToday = ->
 
 $(document).ready ->
 
+    # associate function with click event
     $('#button-today').on 'click', -> clickToday()
 
+    # compute the width of the current readings
     width = Math.trunc($('#readings').width() / 3)
+
     # sets same height for all equal classed panels
     $('.equal .panel').matchHeight()
+
+    # configure temperature chart
     temperature_chart = new FusionCharts(
         type: 'thermometer'
         renderAt: 'elem-temperature'
@@ -182,6 +187,8 @@ $(document).ready ->
         dataFormat: 'json'
         dataSource: temperature_data)
     temperature_chart.render()
+
+    # configure humidity chart
     humidity_chart = new FusionCharts(
         type: 'angulargauge'
         renderAt: 'elem-humidity'
@@ -190,6 +197,8 @@ $(document).ready ->
         dataFormat: 'json'
         dataSource: humidity_data)
     humidity_chart.render()
+
+    # configure light chart
     light_chart = new FusionCharts(
         type: 'bulb'
         renderAt: 'elem-light'
@@ -198,20 +207,21 @@ $(document).ready ->
         dataFormat: 'json'
         dataSource: light_data)
     light_chart.render()
+
+    # configure calendar widget
     $('#calendar').datetimepicker(
         inline: true
         sideBySide: false
         format: 'YYYY-MM-dd'
-        locale: 'ca').on 'dp.change', (e) ->
-        d = moment(new Date(e.date._d)).format('YYYY-MM-DD')
-        changeDate d
+        locale: 'ca'
+    ).on 'dp.change', (e) ->
+        d = moment(new Date e.date._d).format 'YYYY-MM-DD'
+        clickDate d
+
+    # perform first update
     UpdateDates()
     UpdateReadings()
 
-
-
-# update each minute
-setInterval UpdateReadings, 60 * 1000
-
-# update each hour
-setInterval UpdateDates, 60 * 60 * 1000
+    # perform  periodic updates
+    setInterval UpdateReadings, 60 * 1000
+    setInterval UpdateDates, 60 * 60 * 1000

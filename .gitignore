@@ -2,5 +2,7 @@ sensor/sensor.h
 app/bower_components
 web/bower_components
 web/__pycache__
+web/app.js
+web/index.html
 web/venv
 *~
