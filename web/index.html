@@ -42,6 +42,9 @@
     <script type="text/javascript"  src='/bower_components/flot/jquery.flot.resize.js'></script>
     <script type="text/javascript"  src='/bower_components/flot/jquery.flot.time.js'></script>
 
+    <!-- match height -->
+    <script type="text/javascript" src='/bower_components/matchHeight/dist/jquery.matchHeight-min.js'></script>
+
     <!-- this app -->
     <script type="text/javascript" src='/app.js'></script>
 
@@ -57,10 +60,10 @@
             <p id='elem-subtitle'>Clima Llar App</p>
         </div>
 
-        <div class='row'>
+        <div class='row equal'>
 
             <div class='col-md-6'>
-                <div class='panel panel-default'>
+                <div id='panel-now' class='panel panel-default'>
                     <div class='panel-heading'>
                         <b>
                             <span id='elem-time'>Hora</span>
@@ -112,6 +115,7 @@
                     <div class='panel-heading'>
                         <b>
                             Temperatura
+                            <span class='pull-right mydate'></span>
                         </b>
                     </div>
                     <div class='panel-body'>
@@ -127,6 +131,7 @@
                     <div class='panel-heading'>
                         <b>
                             Humitat
+                            <span class='pull-right mydate'></span>
                         </b>
                     </div>
                     <div class='panel-body'>
@@ -142,6 +147,7 @@
                     <div class='panel-heading'>
                         <b>
                             Llum
+                            <span class='pull-right mydate'></span>
                         </b>
                     </div>
                     <div class='panel-body'>
@@ -154,7 +160,7 @@
 
         </div>
 
-        <div class='row'>
+        <div class='row equal'>
             <div class='col-md-6'>
                 <div class='panel panel-default'>
                     <div class='panel-heading'>
@@ -168,6 +174,7 @@
                                 <div id="calendar"></div>
                             </div>
                         </div>
+                        <a style='display: none; ' id='button-today' class='btn btn-primary btn-block btn-sm' href='#' onclick='clickToday();'>Avui</a>
                     </div>
                 </div>
             </div>

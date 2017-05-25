@@ -19,7 +19,8 @@
     "bootstrap": "",
     "fusioncharts": "",
     "font-awesome": "",
+    "matchHeight": "",
     "flot": "",
-    "eonasdan-bootstrap-datetimepicker": "^4.17.47"
+    "eonasdan-bootstrap-datetimepicker": ""
   }
 }

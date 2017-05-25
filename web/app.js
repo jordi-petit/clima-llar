@@ -1,3 +1,6 @@
+var date = null;        // current date
+
+
 var temperature_chart = null;
 var humidity_chart = null;
 var light_chart = null;
@@ -76,10 +79,57 @@ var light_data = {
 
 
 
+function showReadings(readings) {
+    var temperature_histo = [];
+    var humidity_histo = [];
+    var light_histo = [];
+
+    var c = 0;
+    for (reading of readings) {
+        var dt = new Date(reading.moment).getTime();
+        if (reading.temperature != 255) temperature_histo.push([dt, reading.temperature]);
+        if (reading.humidity != 255) humidity_histo.push([dt, reading.humidity]);
+        if (reading.light != 255) light_histo.push([dt, lux(reading.light)]);
+    }
+
+    var temperature_conf = [
+        {
+            data: temperature_histo,
+            color: "red"
+        }
+    ];
+    var humidity_conf = [
+        {
+            data: humidity_histo,
+            color: "blue"
+        }
+    ];
+    var light_conf = [
+        {
+            data: light_histo,
+            color: "green"
+        }
+    ];
+
+    var ops = {
+        xaxis: {
+            mode: "time",
+            timezone: "browser"
+        }
+    };
+
+    $.plot($("#temperature-histo"), temperature_conf, ops);
+    $.plot($("#humidity-histo"), humidity_conf, ops);
+    $.plot($("#light-histo"), light_conf, ops);
+}
+
 
 
 $(document).ready(function() {
     var width = Math.trunc($("#readings").width() / 3);
+
+    // sets same height for all equal classed panels
+    $('.equal .panel').matchHeight();
 
     temperature_chart = new FusionCharts({
         type: "thermometer",
@@ -117,12 +167,13 @@ $(document).ready(function() {
         format: "YYYY-MM-dd",
         locale: "ca"
     })
-    .on('dp.change',function(e){
-        console.log(e);
-        console.log(e.date._d);
+    .on('dp.change',function(e) {
+        var d = moment(new Date(e.date._d)).format("YYYY-MM-DD");
+        changeDate(d);
     });
 
-    update();
+    UpdateDates();
+    UpdateReadings();
 });
 
 
@@ -131,7 +182,35 @@ function lux(x) {
 }
 
 
-function update() {
+function changeDate(d) {
+    date = d;
+    $('.mydate').html(date);
+    $('#panel-now').hide();
+    $('#button-today').show();
+    $.getJSON("/api/casa/dates/"+date, function(readings) {
+        showReadings(readings);
+    });
+
+
+}
+
+
+function UpdateDates() {
+    $.getJSON("/api/casa/dates", function(dates) {
+        ds = [];
+        for (d of dates) ds.push(moment(d));
+
+        $('#calendar').data("DateTimePicker").options({
+            enabledDates: ds
+        });
+    });
+}
+
+
+
+function UpdateReadings () {
+    if (date) return;
+
     $.getJSON("/api/casa", function(data) {
 
         data.light = lux(data.light);
@@ -154,55 +233,26 @@ function update() {
         $("#elem-light-value").html(data.light+"%");
     });
 
+    $('.mydate').html("Avui");
+    $('#panel-now').show();
+    $('#button-today').hide();
     $.getJSON("/api/casa/dates/today", function(readings) {
-
-        var temperature_histo = [];
-        var humidity_histo = [];
-        var light_histo = [];
-
-        var c = 0;
-        for (reading of readings) {
-             if (++c % 3 != 0) continue;
-            var dt = new Date(reading.moment).getTime();
-            if (reading.temperature != 255) temperature_histo.push([dt, reading.temperature]);
-            if (reading.humidity != 255) humidity_histo.push([dt, reading.humidity]);
-            if (reading.light != 255) light_histo.push([dt, lux(reading.light)]);
-        }
-
-        var temperature_conf = [
-            {
-                data: temperature_histo,
-                color: "red"
-            }
-        ];
-        var humidity_conf = [
-            {
-                data: humidity_histo,
-                color: "blue"
-            }
-        ];
-        var light_conf = [
-            {
-                data: light_histo,
-                color: "green"
-            }
-        ];
-
-        var ops = {
-            xaxis: {
-                mode: "time",
-                timezone: "browser"
-            }
-        };
-
-        $.plot($("#temperature-histo"), temperature_conf, ops);
-        $.plot($("#humidity-histo"), humidity_conf, ops);
-        $.plot($("#light-histo"), light_conf, ops);
+        showReadings(readings);
     });
+}
 
 
+function clickToday() {
+    date = null;
+    $('.mydate').html("Avui");
+    $('#panel-now').show();
+    $('#button-today').hide();
+    $.getJSON("/api/casa/dates/today", function(readings) {
+        showReadings(readings);
+    });
 }
 
 
 
-setInterval(update, 60000);  // refresh each minute
+setInterval(UpdateReadings, 60*1000);  // update each minute
+setInterval(UpdateDates, 60*60*1000);  // update each hour
