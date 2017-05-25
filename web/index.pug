@@ -1,0 +1,127 @@
+doctype html
+html(lang='en')
+
+    head
+
+        title Clima Llar App
+
+        meta(charset='utf-8')
+        meta(http-equiv='X-UA-Compatible', content='IE=edge')
+        meta(name='viewport', content='width=device-width, initial-scale=1')
+
+        // let app be placed in phone menu
+        meta(name='mobile-web-app-capable', content='yes')
+        meta(name='apple-mobile-web-app-capable', content='yes')
+
+        // favicon
+        link(rel='shortcut icon', href='favicon.ico')
+
+        // jquery
+        script(type='text/javascript', src='/bower_components/jquery/dist/jquery.min.js')
+
+        // bootstrap
+        link(href='/bower_components/bootstrap/dist/css/bootstrap.min.css', rel='stylesheet')
+        script(type='text/javascript', src='/bower_components/bootstrap/dist/js/bootstrap.min.js')
+
+        // moment
+        script(type='text/javascript', src='/bower_components/moment/min/moment.min.js')
+        script(type='text/javascript', src='/bower_components/moment/min/locales.js')
+
+        // bootstrap datetime picker
+        script(type='text/javascript', src='/bower_components/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js')
+        link(rel='stylesheet', href='/bower_components/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css')
+
+        // fusioncharts
+        script(type='text/javascript', src='/bower_components/fusioncharts/fusioncharts.js')
+        script(type='text/javascript', src='/bower_components/fusioncharts/themes/fusioncharts.theme.fint.js')
+
+        // flot charts
+        script(type='text/javascript', src='/bower_components/flot/excanvas.min.js')
+        script(type='text/javascript', src='/bower_components/flot/jquery.flot.js')
+        script(type='text/javascript', src='/bower_components/flot/jquery.flot.pie.js')
+        script(type='text/javascript', src='/bower_components/flot/jquery.flot.resize.js')
+        script(type='text/javascript', src='/bower_components/flot/jquery.flot.time.js')
+
+        // match height
+        script(type='text/javascript', src='/bower_components/matchHeight/dist/jquery.matchHeight-min.js')
+
+        // this app
+        script(type='text/javascript', src='/app.js')
+
+    body
+        .container
+            br
+            .jumbotron(style='padding-top: 6px; padding-bottom: 6px;')
+                h1#elem-title Casa
+                p#elem-subtitle Clima Llar App
+            .row.equal
+                .col-md-6
+                    #panel-now.panel.panel-default
+                        .panel-heading
+                            b
+                                span#elem-time Hora
+                                span#elem-date.pull-right Data
+                        .panel-body
+                            table#readings(style='width: 100%; ')
+                                tr
+                                    td(style='text-align: center')
+                                        small Temperatura
+                                    td(style='text-align: center')
+                                        small Humitat
+                                    td(style='text-align: center')
+                                        small Llum
+                                tr
+                                    td(style='text-align: center')
+                                        b
+                                            small#elem-temperature-value
+                                    td(style='text-align: center')
+                                        b
+                                            small#elem-humidity-value
+                                    td(style='text-align: center')
+                                        b
+                                            small#elem-light-value
+                                tr
+                                    td(valign='center', style='text-align: center')
+                                        #elem-temperature
+                                    td(valign='center', style='text-align: center')
+                                        #elem-humidity
+                                    td(valign='center', style='text-align: center')
+                                        #elem-light
+                .col-md-6
+                    .panel.panel-default
+                        .panel-heading
+                            b
+                                | Temperatura
+                                span.pull-right.mydate
+                        .panel-body
+                            .flot-chart
+                                #temperature-histo.flot-chart-content(style='height: 175px;')
+                .col-md-6
+                    .panel.panel-default
+                        .panel-heading
+                            b
+                                | Humitat
+                                span.pull-right.mydate
+                        .panel-body
+                            .flot-chart
+                                #humidity-histo.flot-chart-content(style='height: 175px;')
+                .col-md-6
+                    .panel.panel-default
+                        .panel-heading
+                            b
+                                | Llum
+                                span.pull-right.mydate
+                        .panel-body
+                            .flot-chart
+                                #light-histo.flot-chart-content(style='height: 175px;')
+            .row.equal
+                .col-md-6
+                    .panel.panel-default
+                        .panel-heading
+                            b
+                                | Calendari
+                        .panel-body
+                            div(style='overflow:hidden;')
+                                .form-group
+                                    #calendar
+                            a#button-today.btn.btn-primary.btn-block.btn-sm(style='display: none;', href='#') Avui
