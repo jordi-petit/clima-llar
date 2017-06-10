@@ -57,9 +57,6 @@ const int Pin_Led = 13;
 // Pin for the push button
 const int Pin_Btn = 5;
 
-// Lengths of the string buffers
-const int MaxLen = 128;
-
 // Time when last reading was sent
 unsigned long last;
 
@@ -122,20 +119,23 @@ int read_light() {
 
 // Send data over wifi
 
-void send_wifi(const char* data) {
+void post(const char* url, const char* data) {
     if (use_wifi) {
         if (not client.connected()) client.stop();
         if (client.connect(server, port)) {
-            Serial.println("Connected to server");
-            client.print(data);
+            // Verbose to save memory, delays to not fill buffers
+            Serial.println("Send POST to server");
+            Serial.println(data);
+            client.print("POST "); client.print(url); client.println(" HTTP/1.1");  delay(50);
+            client.print("Host: "); client.println(server);  delay(50);
+            client.print("Content-Length: "); client.println(strlen(data));  delay(50);
+            client.println("Content-Type: application/json");  delay(50);
+            client.println("");  delay(50);
+            client.println(data);  delay(50);
         } else {
             Serial.println("Cannot connect to server");
         }
     }
-    Serial.print("time: ");
-    Serial.print(millis() / 1000);
-    Serial.print(" data: ");
-    Serial.println(data);
 }
 
 
@@ -157,13 +157,23 @@ void led_flash() {
 void sense_and_send() {
     digitalWrite(Pin_Led, HIGH);
     printWifiStatus();
+
     byte temperature = 255;
     byte humidity = 255;
     read_DHT11(temperature, humidity);
     int light = read_light();
-    char info[MaxLen];
-    snprintf(info, MaxLen, "%s:%d:%d:%d", key, temperature, humidity, light);
-    send_wifi(info);
+
+    char data[64];
+    snprintf(data, 64, "{\"temperature\": %d, \"humidity\": %d, \"light\": %d}",
+        temperature, humidity, light);
+
+    Serial.println(data);
+
+    char url[64];
+    snprintf(url, 64, "/api/%s/submit", key);
+
+    post(url, data);
+
     digitalWrite(Pin_Led, LOW);
 }
 
@@ -173,7 +183,7 @@ void sense_and_send() {
 void setup() {
     // Setup serial of the console
     Serial.begin(9600);
-    Serial.println("# clima-llar sensor starting");
+    Serial.println("# clima-llar-sensor starting");
 
     // Setup serial of the esp01
     esp01.begin(9600);
@@ -217,9 +227,6 @@ void setup() {
     }
 
     // Start
-    char info[MaxLen];
-    snprintf(info, MaxLen, "%s:hello", key);
-    send_wifi(info);
 
     sense_and_send();
     last = millis();
