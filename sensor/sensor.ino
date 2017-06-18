@@ -1,5 +1,5 @@
 
-// Macros with constants (defines MY_SSID, MY_PSWD, MY_SERVER, MY_PORT, MY_KEY)
+// Macros with constants (defines MY_SSID_*, MY_PSWD_*, MY_PLACE_*, MY_SERVER, MY_PORT)
 // This file is not included in the GIT repo to hide sensitive data.
 #include "sensor.h"
 
@@ -19,16 +19,10 @@
 const bool use_wifi = true;
 
 // Polling period
-const unsigned long period = 60000L;   // (1 minute)
+unsigned long period = 0;
 
 // Min time between push button request
 const unsigned long min_push = 1000L;   // (1 second)
-
-// Name of the wireless network
-const char* ssid = MY_SSID;
-
-// Password of the wireless network
-const char* pswd = MY_PSWD;
 
 // IP of the server
 const char* server = MY_SERVER;
@@ -36,8 +30,19 @@ const char* server = MY_SERVER;
 // Port of the server
 const int port = MY_PORT;
 
-// Clima-Llar key
-const char* key = MY_KEY;
+// Names of the wireless network
+const char* ssids[2] = {MY_SSID_0, MY_SSID_1};
+
+// Passwords of the wireless network
+const char* pswds[2] = {MY_PSWD_0, MY_PSWD_1};
+
+// Clima-Llar places
+const char* places[2] = {MY_PLACE_0, MY_PLACE_1};
+
+// Values set at setup time
+const char* ssid;
+const char* pswd;
+const char* place;
 
 // Pin for RX
 const int Pin_RX = 3;
@@ -54,11 +59,15 @@ const int Pin_PhRes = A0;
 // Pin for the onboard LED
 const int Pin_Led = 13;
 
-// Pin for the push button
+// Pin for the push button (to send readings now)
 const int Pin_Btn = 5;
 
 // Time when last reading was sent
 unsigned long last;
+
+// Pins for the configuration switches
+const int Pin_Sw1 = 6;
+const int Pin_Sw2 = 7;
 
 
 // The ESP01 wifi device
@@ -170,7 +179,7 @@ void sense_and_send() {
     Serial.println(data);
 
     char url[64];
-    snprintf(url, 64, "/api/%s/submit", key);
+    snprintf(url, 64, "/api/%s/submit", place);
 
     post(url, data);
 
@@ -183,10 +192,7 @@ void sense_and_send() {
 void setup() {
     // Setup serial of the console
     Serial.begin(9600);
-    Serial.println("# clima-llar-sensor starting");
-
-    // Setup serial of the esp01
-    esp01.begin(9600);
+    Serial.println("# clima-llar-sensor");
 
     // Setup LED
     pinMode(Pin_Led, OUTPUT);
@@ -197,6 +203,20 @@ void setup() {
 
     // Setup push button
     pinMode(Pin_Btn, INPUT_PULLUP);
+
+    // Setup switches
+    pinMode(6, INPUT_PULLUP);
+    pinMode(7, INPUT_PULLUP);
+
+    // Read switch 1 and set place parameters
+    int p = digitalRead(Pin_Sw1) == HIGH ? 0 : 1;
+    place = places[p];
+    ssid = ssids[p];
+    pswd = pswds[p];
+    Serial.println(place);
+
+    // Setup serial of the esp01
+    esp01.begin(9600);
 
     // Setup Wifi
     if (use_wifi) {
@@ -241,6 +261,16 @@ void loop() {
     while (client.available()) {
         Serial.print(char(client.read()));
     }
+
+    // Set period using switch 2
+    bool p = digitalRead(Pin_Sw2) == HIGH;
+    if (p and period != 60000L) {
+        period = 60000L;
+        Serial.println(period);
+    } else if (not p and period != 300000L) {
+        period = 300000L;
+        Serial.println(period);
+   }
 
     // Check time
     unsigned long time_since_last = millis() - last;
