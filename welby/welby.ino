@@ -49,10 +49,12 @@ const int Pin_DHT11 = D0;
 // Pin for the photoresistor (analog!)
 const int Pin_PhRes = A0;
 
-// The variables with the readings
-int temperature;
-int humidity;
-int light;
+// The struct with the readings
+struct Readings {
+    int temperature;
+    int humidity;
+    int light;
+};
 
 // SSID of the wifi network
 const char* ssid = MY_SSID;
@@ -168,15 +170,13 @@ void translateIR() {
 
 // Read temperature and humidity from DHT11 and light from photoresistor
 
-void get_readinds() {
+Readings get_readings() {
     byte temp = 0;
     byte humi = 0;
     if (dht11.read(Pin_DHT11, &temp, &humi, NULL)) {
         Serial.println("Read DHT11 failed");
     }
-    temperature = temp;
-    humidity = humi;
-    light = analogRead(Pin_PhRes);
+    return {temp, humi, analogRead(Pin_PhRes)};
 }
 
 
@@ -213,6 +213,56 @@ void check_ir() {
 }
 
 
+void send_readings() {
+    Readings r = get_readings();
+
+    WiFiClient client;
+
+    if (client.connect(server, 80)) {
+
+        String json
+            = "{\"temperature\":" + String(r.temperature)
+            + ",\"light\":" + String(r.light)
+            + ",\"humidity\":" + String(r.humidity)
+            + "}\r\n"
+        ;
+
+        String post
+            = "POST /api/" + String(place_id) + "/submit HTTP/1.1\r\n"
+            + "Host: " + String(server) + "\r\n"
+            + "Content-Length: " + String(json.length()) + "\r\n"
+            + "Content-Type: application/json\r\n"
+            + "\r\n"
+            + json + "\r\n"
+        ;
+
+        Serial.println("== send ==");
+        Serial.print(post);
+        client.print(post);
+
+        Serial.println("== receive ==");
+        // headers
+        while (client.connected()) {
+            String line = client.readStringUntil('\n');
+            Serial.println(line);
+            if (line == "\r") break;
+        }
+        // body
+        while (client.connected()) {
+            String line = client.readStringUntil('\n');
+            Serial.println(line);
+            if (line == "\r" or line == "") break;
+        }
+
+    } else {
+        Serial.println("!!! error");
+    }
+
+    client.stop();
+    q.in(20000, send_readings);
+}
+
+
 void setup() {
     // Setup Serial
     Serial.begin(115200);
@@ -236,7 +286,10 @@ void setup() {
 
     // Setup IR
     irrecv.enableIRIn();
+
+    // Set periodic timers
     q.in(10, check_ir);
+    q.in(5000, send_readings);
 }
 
 
