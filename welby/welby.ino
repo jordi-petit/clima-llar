@@ -1,7 +1,39 @@
+
+// ****************************************************************
+// clima-llar-sensor (welby-edition)
+// ****************************************************************
+
+
+// WiFi - https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/readme.html#
 #include <ESP8266WiFi.h>
+
+// DHT11 - Elegoo
 #include <SimpleDHT.h>
+
+// IR - https://github.com/markszabo/IRremoteESP8266
 #include <IRrecv.h>
-//#include "queue.hh"
+
+// Queue - Jordi
+#include "queue.hh"
+
+// Macros with the application parameters
+#include "welby.h"
+
+
+// ***************************************************************************
+// The event queue and its capacity
+// ***************************************************************************
+
+Queue<10> q;
+
+
+#include "ambient.h"
+
+
+// ***************************************************************************
+// ...
+// ***************************************************************************
+
 
 // Pin for the leds
 const int Pin_LedR = D6;
@@ -17,122 +49,129 @@ const int Pin_DHT11 = D0;
 // Pin for the photoresistor (analog!)
 const int Pin_PhRes = A0;
 
-// The DHT11 sensor device
-SimpleDHT11 dht11;
-
-// The IR sensor device
-IRrecv irrecv(Pin_IR);
-
-decode_results results;
-
-// The event queue and its capacity
-//Queue<10> q;
-
 // The variables with the readings
 int temperature;
 int humidity;
 int light;
 
-void translateIR() // takes action based on IR code received
+// SSID of the wifi network
+const char* ssid = MY_SSID;
 
-// describing Remote IR codes
+// Password of the wifi network
+const char* pswd = MY_PSWD;
 
-{
+// clima-llar server host name and its port
+const char* server = MY_SERVER;
+const int port = MY_PORT;
 
-    switch (results.value)
+// clima-llar place_id
+const char* place_id = MY_PLACE;
 
-    {
-    case 0xFFA25D:
-        Serial.println("POWER");
-        break;
-    case 0xFFE21D:
-        Serial.println("FUNC/STOP");
-        break;
-    case 0xFF629D:
-        Serial.println("VOL+");
-        break;
-    case 0xFF22DD:
-        Serial.println("FAST BACK");
-        break;
-    case 0xFF02FD:
-        Serial.println("PAUSE");
-        break;
-    case 0xFFC23D:
-        Serial.println("FAST FORWARD");
-        break;
-    case 0xFFE01F:
-        Serial.println("DOWN");
-        break;
-    case 0xFFA857:
-        Serial.println("VOL-");
-        break;
-    case 0xFF906F:
-        Serial.println("UP");
-        break;
-    case 0xFF9867:
-        Serial.println("EQ");
-        break;
-    case 0xFFB04F:
-        Serial.println("ST/REPT");
-        break;
-    case 0xFF6897:
-        Serial.println("0");
-        break;
-    case 0xFF30CF:
-        Serial.println("1");
-        analogWrite(Pin_LedR, 255);
-        break;
-    case 0xFF18E7:
-        Serial.println("2");
-        analogWrite(Pin_LedR, 128);
-        break;
-    case 0xFF7A85:
-        Serial.println("3");
-        analogWrite(Pin_LedR, 0);
-        break;
-    case 0xFF10EF:
-        Serial.println("4");
-        analogWrite(Pin_LedG, 255);
-        break;
-    case 0xFF38C7:
-        Serial.println("5");
-        analogWrite(Pin_LedG, 128);
-        break;
-    case 0xFF5AA5:
-        Serial.println("6");
-        analogWrite(Pin_LedG, 0);
-        break;
-    case 0xFF42BD:
-        Serial.println("7");
-        analogWrite(Pin_LedB, 255);
-        break;
-    case 0xFF4AB5:
-        Serial.println("8");
-        analogWrite(Pin_LedB, 128);
-        break;
-    case 0xFF52AD:
-        Serial.println("9");
-        analogWrite(Pin_LedB, 0);
-        break;
-    case 0xFFFFFFFF:
-        Serial.println(" REPEAT");
-        break;
+// The ambient object
+Ambient ambient(Pin_LedR, Pin_LedG, Pin_LedB);
 
-    default:
-        Serial.println(" other button   ");
+// The DHT11 sensor device
+SimpleDHT11 dht11;
 
-    } // End Case
+// The IR sensor device and its results
+IRrecv irrecv(Pin_IR);
+decode_results results;
 
-    delay(500); // Do not get immediate repeat
 
+
+
+
+void translateIR() {
+
+    switch (results.value) {
+        case 0xFFA25D:
+            Serial.println("POWER");
+            if (ambient.program == 0) ambient.begin_1();
+            else ambient.begin_0();
+            break;
+        case 0xFFE21D:
+            Serial.println("FUNC/STOP");
+            break;
+        case 0xFF629D:
+            Serial.println("VOL+");
+            break;
+        case 0xFF22DD:
+            Serial.println("FAST BACK");
+            break;
+        case 0xFF02FD:
+            Serial.println("PAUSE");
+            break;
+        case 0xFFC23D:
+            Serial.println("FAST FORWARD");
+            break;
+        case 0xFFE01F:
+            Serial.println("DOWN");
+            break;
+        case 0xFFA857:
+            Serial.println("VOL-");
+            break;
+        case 0xFF906F:
+            Serial.println("UP");
+            break;
+        case 0xFF9867:
+            Serial.println("EQ");
+            break;
+        case 0xFFB04F:
+            Serial.println("ST/REPT");
+            break;
+        case 0xFF6897:
+            Serial.println("0");
+            ambient.begin_0();
+            break;
+        case 0xFF30CF:
+            Serial.println("1");
+            ambient.begin_1();
+            break;
+        case 0xFF18E7:
+            Serial.println("2");
+            ambient.begin_2();
+            break;
+        case 0xFF7A85:
+            Serial.println("3");
+            ambient.begin_3();
+            break;
+        case 0xFF10EF:
+            Serial.println("4");
+            ambient.begin_4();
+            break;
+        case 0xFF38C7:
+            Serial.println("5");
+            ambient.begin_5();
+            break;
+        case 0xFF5AA5:
+            Serial.println("6");
+            break;
+        case 0xFF42BD:
+            Serial.println("7");
+            break;
+        case 0xFF4AB5:
+            Serial.println("8");
+            break;
+        case 0xFF52AD:
+            Serial.println("9");
+            break;
+        case 0xFFFFFFFF:
+            Serial.println(" REPEAT");
+            break;
+
+        default:
+            Serial.println(" other button   ");
+
+    }
 }
+
 
 // Read temperature and humidity from DHT11 and light from photoresistor
 
 void get_readinds() {
     byte temp = 0;
     byte humi = 0;
-    if (dht11.read(Pin_DHT11, & temp, & humi, NULL)) {
+    if (dht11.read(Pin_DHT11, &temp, &humi, NULL)) {
         Serial.println("Read DHT11 failed");
     }
     temperature = temp;
@@ -142,8 +181,7 @@ void get_readinds() {
 
 
 
-void printWifiStatus()
-{
+void printWifiStatus() {
     // print the SSID of the network you're attached to
     Serial.print("SSID: ");
     Serial.println(WiFi.SSID());
@@ -158,48 +196,62 @@ void printWifiStatus()
     Serial.print("Signal strength (RSSI):");
     Serial.print(rssi);
     Serial.println(" dBm");
+
+    // print diagnostics
+    WiFi.printDiag(Serial);
+}
+
+
+void check_ir() {
+    if (irrecv.decode(&results)) {
+        translateIR();
+        irrecv.resume();
+        q.in(500, check_ir);
+    } else {
+        q.in(10, check_ir);
+    }
 }
 
 
 void setup() {
     // Setup Serial
-    Serial.begin(9600);
+    Serial.begin(115200);
     Serial.println(F("\n\nclima-llar-sensor (welby-edition)\n\n"));
 
     // Setup Photoresistor
     pinMode(Pin_PhRes, INPUT);
 
-    // Setup Leds
-    pinMode(Pin_LedR, OUTPUT);
-    pinMode(Pin_LedG, OUTPUT);
-    pinMode(Pin_LedB, OUTPUT);
-    analogWrite(Pin_LedR, 0);
-    analogWrite(Pin_LedG, 0);
-    analogWrite(Pin_LedB, 0);
+    // Setup Wifi
+    Serial.print("Connecting to wifi");
+    WiFi.begin(ssid, pswd);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println("!");
+    printWifiStatus();
+
+    // Setup Ambient
+    ambient.begin();
 
     // Setup IR
     irrecv.enableIRIn();
-
-    // Setup Wifi
-    Serial.print("Connecting to wifi");
-    WiFi.begin("VIRUS64", "filiprim64");
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(1000);
-        Serial.print(".");
-    }
-
-    Serial.println("");
-    Serial.println("Connected");
-    Serial.println("");
-
-    printWifiStatus();
+    q.in(10, check_ir);
 }
 
+
 void loop() {
-    if (irrecv.decode( & results)) {
+    q.drain();
+}
+
+
+/*
+    if (irrecv.decode(&results)) {
         translateIR();
         irrecv.resume();
     }
+
+        delay(1000);
 
     WiFiClient client;
 
@@ -235,4 +287,4 @@ void loop() {
     client.stop();
 
     delay(30000);
-}
+    */
